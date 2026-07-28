@@ -1,0 +1,272 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { AppShell } from "@/components/AppShell";
+import { actions, daysBetween, subjectProgress, todayISO, useStore, type Subject } from "@/lib/store";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+} from "@/components/ui/sheet";
+import { Plus, Trash2, ChevronRight, Circle, CircleDashed, CircleCheck, BookOpen, Video, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { useT } from "@/lib/i18n";
+
+export const Route = createFileRoute("/subjects")({
+  head: () => ({
+    meta: [
+      { title: "Subjects & Exams — Study Planner" },
+      { name: "description", content: "Add your subjects, set exam dates, and track topics." },
+      { property: "og:title", content: "Subjects & Exams — Study Planner" },
+      { property: "og:description", content: "Add your subjects, set exam dates, and track topics." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: SubjectsPage,
+});
+
+function SubjectsPage() {
+  const { t } = useT();
+  const subjects = useStore((s) => s.subjects);
+  const today = todayISO();
+
+  return (
+    <AppShell
+      title={t("subjectsTitle")}
+      subtitle={t("subjectsSubtitle")}
+      action={<AddSubjectButton />}
+    >
+      {subjects.length === 0 ? (
+        <Card className="border-dashed bg-muted/40 p-8 text-center">
+          <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary text-2xl">📚</div>
+          <p className="font-semibold">{t("noSubjectsYet")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("tapPlusToAdd")}</p>
+        </Card>
+      ) : (
+        <ul className="space-y-3">
+          {subjects.map((sub) => {
+            const daysLeft = daysBetween(today, sub.examDate);
+            const pct = subjectProgress(sub);
+            return (
+              <li key={sub.id}>
+                <SubjectSheet subject={sub}>
+                  <button className="w-full text-left">
+                    <Card className="p-4 shadow-sm transition-transform active:scale-[0.99]">
+                      <div className="flex items-center gap-3">
+                        <span className="h-11 w-11 shrink-0 rounded-2xl" style={{ backgroundColor: sub.color }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="truncate text-lg font-bold">{sub.name}</div>
+                            <ChevronRight size={20} className="shrink-0 text-muted-foreground" />
+                          </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {daysLeft >= 0
+                              ? t(daysLeft === 1 ? "dayToExam" : "daysToExam", { n: daysLeft })
+                              : t("examPassed")}
+                            {" · "}
+                            {sub.topics.length} {sub.topics.length === 1 ? t("topic") : t("topics")}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Progress value={pct} className="h-2 flex-1" />
+                        <span className="text-xs font-bold text-muted-foreground">{pct}%</span>
+                      </div>
+                    </Card>
+                  </button>
+                </SubjectSheet>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </AppShell>
+  );
+}
+
+function AddSubjectButton() {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [date, setDate] = useState("");
+
+  const submit = () => {
+    if (!name.trim() || !date) return;
+    actions.addSubject(name.trim(), date);
+    setName(""); setDate(""); setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="lg" className="h-12 w-12 rounded-full p-0 shadow-md">
+          <Plus size={24} />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-2xl">
+        <DialogHeader>
+          <DialogTitle>{t("addSubject")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="s-name" className="mb-1.5 block">{t("subjectName")}</Label>
+            <Input id="s-name" placeholder={t("subjectNamePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} className="h-12" />
+          </div>
+          <div>
+            <Label htmlFor="s-date" className="mb-1.5 block">{t("examDate")}</Label>
+            <Input id="s-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button className="h-12 w-full text-base" onClick={submit} disabled={!name.trim() || !date}>
+            {t("saveSubject")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function isScienceOrMath(name: string) {
+  const n = name.toLowerCase();
+  return ["math", "mathematics", "science", "biology", "chemistry", "physics", "ریاضی", "سائنس", "طبیعیات", "کیمیا", "حیاتیات"].some((k) =>
+    n.includes(k),
+  );
+}
+
+function SubjectSheet({ subject, children }: { subject: Subject; children: React.ReactNode }) {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  const [topicName, setTopicName] = useState("");
+  const [confirmDel, setConfirmDel] = useState(false);
+  const sub = useStore((s) => s.subjects.find((x) => x.id === subject.id));
+  if (!sub) return <>{children}</>;
+
+  const addTopic = () => {
+    if (!topicName.trim()) return;
+    actions.addTopic(sub.id, topicName.trim());
+    setTopicName("");
+  };
+
+  const cycle = (topicId: string, current: "not_started" | "in_progress" | "completed") => {
+    const next = current === "not_started" ? "in_progress" : current === "in_progress" ? "completed" : "not_started";
+    actions.setTopicStatus(sub.id, topicId, next);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>{children}</SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl">
+        <SheetHeader className="text-left">
+          <div className="flex items-center gap-3">
+            <span className="h-10 w-10 rounded-2xl" style={{ backgroundColor: sub.color }} />
+            <div className="min-w-0">
+              <SheetTitle className="truncate text-xl">{sub.name}</SheetTitle>
+              <p className="text-xs text-muted-foreground">{t("exam")}: {sub.examDate}</p>
+            </div>
+          </div>
+        </SheetHeader>
+
+        <div className="mt-4">
+          <Label className="mb-1.5 block">{t("addTopicChapter")}</Label>
+          <div className="flex gap-2">
+            <Input
+              placeholder={t("topicPlaceholder")}
+              value={topicName}
+              onChange={(e) => setTopicName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTopic()}
+              className="h-12"
+            />
+            <Button className="h-12 shrink-0" onClick={addTopic}>
+              <Plus size={20} />
+            </Button>
+          </div>
+          {sub.topics.length === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">{t("tapPlusForTopics")}</p>
+          )}
+        </div>
+
+        <ul className="mt-4 space-y-2">
+          {sub.topics.map((tp) => (
+            <li key={tp.id} className="flex items-center gap-3 rounded-2xl border bg-card p-3">
+              <button onClick={() => cycle(tp.id, tp.status)} className="shrink-0" aria-label="Change status">
+                {tp.status === "completed" ? (
+                  <CircleCheck size={28} className="text-success" />
+                ) : tp.status === "in_progress" ? (
+                  <CircleDashed size={28} className="text-warning" />
+                ) : (
+                  <Circle size={28} className="text-muted-foreground" />
+                )}
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className={`truncate font-medium ${tp.status === "completed" ? "text-muted-foreground line-through" : ""}`}>
+                  {tp.name}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {tp.status === "not_started" ? t("notStarted") : tp.status === "in_progress" ? t("inProgress") : t("completed")}
+                </div>
+              </div>
+              <button
+                onClick={() => actions.deleteTopic(sub.id, tp.id)}
+                className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Delete topic"
+              >
+                <Trash2 size={18} />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-6">
+          <p className="mb-2 text-sm font-semibold text-muted-foreground">{t("resources")}</p>
+          <div className="space-y-2">
+            <Button asChild variant="outline" className="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal py-3">
+              <a href="https://pctb.punjab.gov.pk/download_books" target="_blank" rel="noopener noreferrer">
+                <BookOpen size={20} className="text-primary" />
+                <span className="flex-1 text-left">{t("pctb")}</span>
+                <ExternalLink size={16} className="text-muted-foreground" />
+              </a>
+            </Button>
+            {isScienceOrMath(sub.name) && (
+              <Button asChild variant="outline" className="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal py-3">
+                <a href="https://elearn.punjab.gov.pk/" target="_blank" rel="noopener noreferrer">
+                  <Video size={20} className="text-primary" />
+                  <span className="flex-1 text-left">{t("elearn")}</span>
+                  <ExternalLink size={16} className="text-muted-foreground" />
+                </a>
+              </Button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">{t("linkBackupNote")}</p>
+        </div>
+
+        <div className="mt-6 border-t pt-4">
+          {!confirmDel ? (
+            <Button variant="outline" className="h-12 w-full text-destructive" onClick={() => setConfirmDel(true)}>
+              <Trash2 size={18} /> {t("deleteSubject")}
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm">{t("deleteConfirm", { name: sub.name })}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="h-12 flex-1" onClick={() => setConfirmDel(false)}>{t("cancel")}</Button>
+                <Button
+                  variant="destructive"
+                  className="h-12 flex-1"
+                  onClick={() => { actions.deleteSubject(sub.id); setOpen(false); }}
+                >
+                  {t("del")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
