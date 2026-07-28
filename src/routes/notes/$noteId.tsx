@@ -14,6 +14,10 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Markdown } from "@/components/notes/Markdown";
+import { FlashcardsView } from "@/components/notes/FlashcardsView";
+import { QuizView } from "@/components/notes/QuizView";
+import { parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
 import { useNotes, noteActions } from "@/lib/notes-store";
