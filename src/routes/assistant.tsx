@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { askAssistant } from "@/lib/assistant.functions";
 import { getUserApiKey } from "@/lib/ai-config";
+import { Markdown } from "@/components/notes/Markdown";
 
 type Msg = { role: "user" | "assistant"; content: string; kind?: string };
 
