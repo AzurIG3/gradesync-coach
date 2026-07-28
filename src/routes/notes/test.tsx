@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { QuizView } from "@/components/notes/QuizView";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateSectionTest } from "@/lib/section-test.functions";
-import { useNotes } from "@/lib/notes-store";
+import { useNotes, type Note } from "@/lib/notes-store";
 import { parseQuiz, type QuizQuestion } from "@/lib/notes-parse";
 
 type Search = { ids?: string };
@@ -39,7 +39,11 @@ function SectionTestPage() {
   const { ids } = Route.useSearch();
   const navigate = useNavigate();
   const idList = (ids ?? "").split(",").filter(Boolean);
-  const notes = useNotes((all) => idList.map((id) => all.find((n) => n.id === id)).filter(Boolean));
+  const notes = useNotes<Note[]>((all) =>
+    idList
+      .map((id: string) => all.find((n) => n.id === id))
+      .filter((n): n is Note => Boolean(n)),
+  );
 
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
@@ -56,7 +60,7 @@ function SectionTestPage() {
       try {
         const res = (await generateSectionTest({
           data: {
-            notes: notes.map((n) => ({ title: n!.title, content: n!.content })),
+            notes: notes.map((n) => ({ title: n.title, content: n.content })),
             apiKey: getUserApiKey(),
           },
         })) as
@@ -133,9 +137,9 @@ function SectionTestPage() {
         </div>
         <ul className="mt-2 space-y-1 text-sm">
           {notes.map((n) => (
-            <li key={n!.id} className="flex items-center gap-2">
+            <li key={n.id} className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-              <span className="truncate">{n!.title}</span>
+              <span className="truncate">{n.title}</span>
             </li>
           ))}
         </ul>
