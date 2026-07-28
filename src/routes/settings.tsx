@@ -1,10 +1,12 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, KeyRound } from "lucide-react";
+import { Check, KeyRound, Monitor, Moon, Sun } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { getUserApiKey, setUserApiKey } from "@/lib/ai-config";
+import { useTheme, type Theme } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -30,8 +32,15 @@ export const Route = createFileRoute("/settings")({
 function SettingsPage() {
   const { t } = useT();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
+
+  const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
+  ];
 
   useEffect(() => {
     setKey(getUserApiKey());
@@ -46,6 +55,41 @@ function SettingsPage() {
   return (
     <AppShell title={t("settingsTitle")} subtitle={t("settingsSubtitle")}>
       <div className="space-y-4">
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Moon size={18} />
+            </span>
+            <h2 className="text-base font-bold">Appearance</h2>
+          </div>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Choose Light, Dark or match your device.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {themeOptions.map(({ value, label, icon: Icon }) => {
+              const active = theme === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTheme(value)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-bold transition",
+                    active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon size={20} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
