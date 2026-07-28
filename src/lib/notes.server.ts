@@ -7,13 +7,13 @@ export type GenMode = "summary" | "details" | "flashcards" | "quiz";
 
 export const MODE_PROMPTS: Record<GenMode, string> = {
   summary:
-    "Summarize the following study notes for a Pakistani Matric (Grade 9-10) student. Use simple words and short sentences. Give a 3-6 sentence summary, then 3-5 bullet points of the main ideas.",
+    "Summarize the following study notes for a Pakistani Matric (Grade 9-10) student. Use simple words and short sentences. Reply in Markdown: a 3-6 sentence summary paragraph, then a bulleted list of 3-5 main ideas. Use **bold** for key terms.",
   details:
-    "Pull out the KEY DETAILS a Matric (Grade 9-10) student must remember from the following study notes: important definitions, formulas, dates, names and facts. Present them as short labelled bullet points. Keep the language simple.",
+    "Pull out the KEY DETAILS a Matric (Grade 9-10) student must remember from the following study notes: important definitions, formulas, dates, names and facts. Reply in Markdown as short bullet points, using **bold** for the label and plain text for the explanation. Keep the language simple.",
   flashcards:
-    "Create 8-12 flashcards from the following study notes for a Matric (Grade 9-10) student. Format each one exactly as:\nQ: <short question>\nA: <short simple answer>\nLeave a blank line between flashcards. Keep answers to one or two simple sentences.",
+    'Create 8-12 flashcards from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"q":"short question","a":"short simple answer (1-2 sentences)"}]. Do not include any text before or after the JSON.',
   quiz:
-    "Create a 8-question practice quiz from the following study notes for a Matric (Grade 9-10) student. Mix multiple-choice (with options A-D) and one-line short answers. Number the questions. After all questions, add a section titled 'Answers' with the correct answer for each number. Keep the language simple.",
+    'Create a 5-question multiple-choice practice quiz from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"question":"...","options":["A option","B option","C option","D option"],"answerIndex":0,"explanation":"one short sentence"}]. Exactly 4 options per question. answerIndex is 0-3. Keep the language simple.',
 };
 
 export const EXTRACT_PROMPT =
