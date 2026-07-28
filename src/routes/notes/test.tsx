@@ -38,12 +38,17 @@ export const Route = createFileRoute("/notes/test")({
 function SectionTestPage() {
   const { ids } = Route.useSearch();
   const navigate = useNavigate();
-  const idList = (ids ?? "").split(",").filter(Boolean);
-  const notes = useNotes<Note[]>((all: Note[]) =>
-    idList
-      .map((id: string) => all.find((n: Note) => n.id === id))
-      .filter((n: Note | undefined): n is Note => Boolean(n)),
+  const idKey = ids ?? "";
+  const idList = useMemo(() => idKey.split(",").filter(Boolean), [idKey]);
+  const allNotes = useNotes<Note[]>((all: Note[]) => all);
+  const notes = useMemo(
+    () =>
+      idList
+        .map((id) => allNotes.find((n) => n.id === id))
+        .filter((n): n is Note => Boolean(n)),
+    [idList, allNotes],
   );
+
 
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
