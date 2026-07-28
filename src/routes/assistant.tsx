@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Send, Sparkles, KeyRound, ExternalLink } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { askAssistant } from "@/lib/assistant.functions";
 import { getUserApiKey } from "@/lib/ai-config";
 import { Markdown } from "@/components/notes/Markdown";
+import { useStore, daysBetween, todayISO } from "@/lib/store";
+import { useNotes } from "@/lib/notes-store";
 
 type Msg = { role: "user" | "assistant"; content: string; kind?: string };
+
 
 
 export const Route = createFileRoute("/assistant")({
