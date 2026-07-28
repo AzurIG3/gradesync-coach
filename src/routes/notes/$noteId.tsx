@@ -144,7 +144,13 @@ function NoteDetailPage() {
               <ArrowLeft size={16} /> Back to note
             </Button>
           </div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{shown}</p>
+          {view === "flashcards" ? (
+            <FlashcardsView cards={parseFlashcards(shown)} />
+          ) : view === "quiz" ? (
+            <QuizView questions={parseQuiz(shown)} />
+          ) : (
+            <Markdown>{shown}</Markdown>
+          )}
         </section>
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
