@@ -31,12 +31,13 @@ export const generateSectionTest = createServerFn({ method: "POST" })
     const { resolveApiKey } = await import("./ai.server");
     const key = resolveApiKey(data.apiKey);
 
-    // Scale question count with total content length: ~1 question per ~1200 chars, clamped 10-20.
+    // Scale question count with total content length: ~1 question per ~1500 chars, clamped 8-15.
+    // Fewer questions = faster generation.
     const total = data.notes.reduce((s, n) => s + n.content.length, 0);
-    const desired = Math.max(10, Math.min(20, Math.round(total / 1200) || 10));
+    const desired = Math.max(8, Math.min(15, Math.round(total / 1500) || 8));
 
-    // Give each note a per-note character budget so a huge note doesn't crowd out short ones.
-    const perNoteBudget = Math.max(2000, Math.floor(45_000 / data.notes.length));
+    // Tighter per-note budget keeps the prompt small so the model responds faster.
+    const perNoteBudget = Math.max(1500, Math.floor(24_000 / data.notes.length));
     const combined = data.notes
       .map(
         (n, i) =>
@@ -60,14 +61,16 @@ RULES:
 - Every question must be answerable from the note it's tagged to.
 - The "topic" field MUST match the note's title exactly (case and spelling).
 - Exactly 4 options per question. "answerIndex" is 0-3.
-- Keep the language simple, short sentences.
+- Keep the language simple, short sentences. Keep explanations to one short sentence.
 - Cover a mix of easy, medium and slightly harder questions.
 - Reply with ONLY a valid JSON array — no prose, no code fences, nothing before or after.
 
 Shape:
 [{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]`;
 
-    const url = `${AI_API_BASE}/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(
+    // gemini-2.5-flash-lite is meaningfully faster than gemini-2.5-flash for
+    // structured MCQ generation and produces equivalent quality here.
+    const url = `${AI_API_BASE}/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(
       key,
     )}`;
     const res = await fetch(url, {
@@ -78,7 +81,7 @@ Shape:
         contents: [{ role: "user", parts: [{ text: combined }] }],
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 2560,
           responseMimeType: "application/json",
         },
       }),
