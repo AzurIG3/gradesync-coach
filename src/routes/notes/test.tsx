@@ -39,10 +39,10 @@ function SectionTestPage() {
   const { ids } = Route.useSearch();
   const navigate = useNavigate();
   const idList = (ids ?? "").split(",").filter(Boolean);
-  const notes = useNotes<Note[]>((all) =>
+  const notes = useNotes<Note[]>((all: Note[]) =>
     idList
-      .map((id: string) => all.find((n) => n.id === id))
-      .filter((n): n is Note => Boolean(n)),
+      .map((id: string) => all.find((n: Note) => n.id === id))
+      .filter((n: Note | undefined): n is Note => Boolean(n)),
   );
 
   const [loading, setLoading] = useState(false);
