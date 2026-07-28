@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ExternalLink, KeyRound, Loader2, ClipboardList } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,18 @@ export const Route = createFileRoute("/notes/test")({
 function SectionTestPage() {
   const { ids } = Route.useSearch();
   const navigate = useNavigate();
-  const idList = (ids ?? "").split(",").filter(Boolean);
-  const notes = useNotes<Note[]>((all: Note[]) =>
-    idList
-      .map((id: string) => all.find((n: Note) => n.id === id))
-      .filter((n: Note | undefined): n is Note => Boolean(n)),
+  const idKey = ids ?? "";
+  const idList = useMemo<string[]>(() => idKey.split(",").filter(Boolean), [idKey]);
+  const allNotes = useNotes<Note[]>((all: Note[]) => all);
+  const notes = useMemo<Note[]>(
+    () =>
+      idList
+        .map((id: string) => allNotes.find((n: Note) => n.id === id))
+        .filter((n: Note | undefined): n is Note => Boolean(n)),
+    [idList, allNotes],
   );
+
+
 
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
