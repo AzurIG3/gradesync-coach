@@ -10,6 +10,7 @@ import {
   ListChecks,
   Layers,
   HelpCircle,
+  MessageCircle,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -17,12 +18,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Markdown } from "@/components/notes/Markdown";
 import { FlashcardsView } from "@/components/notes/FlashcardsView";
 import { QuizView } from "@/components/notes/QuizView";
-import { parseFlashcards, parseQuiz } from "@/lib/notes-parse";
+import { NoteChart } from "@/components/notes/NoteChart";
+import { NoteChat } from "@/components/notes/NoteChat";
+import { EditableTitle } from "@/components/notes/EditableTitle";
+import { extractChart, parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
 import { useNotes, noteActions } from "@/lib/notes-store";
 
 type Mode = "summary" | "details" | "flashcards" | "quiz";
+type View = Mode | "chat";
 
 const OPTIONS: { mode: Mode; label: string; icon: typeof FileText }[] = [
   { mode: "summary", label: "Summarize", icon: FileText },
@@ -30,6 +35,19 @@ const OPTIONS: { mode: Mode; label: string; icon: typeof FileText }[] = [
   { mode: "flashcards", label: "Flashcards", icon: Layers },
   { mode: "quiz", label: "Quiz Me", icon: HelpCircle },
 ];
+
+const VIEW_LABEL: Record<View, string> = {
+  summary: "Summarize",
+  details: "Key Details",
+  flashcards: "Flashcards",
+  quiz: "Quiz Me",
+  chat: "Ask about this note",
+};
+
+/** Heuristic: does the extracted content include a Markdown table? */
+function hasMarkdownTable(text: string): boolean {
+  return /(^|\n)\s*\|.+\|\s*\n\s*\|[\s:-]+\|/.test(text);
+}
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: NoteDetailPage,
@@ -57,7 +75,7 @@ function NoteDetailPage() {
   const note = useNotes((n) => n.find((x) => x.id === noteId));
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<Mode | null>(null);
-  const [view, setView] = useState<Mode | null>(null);
+  const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
 
   async function run(mode: Mode) {
@@ -98,11 +116,22 @@ function NoteDetailPage() {
     );
   }
 
-  const shown = view ? note.outputs[view] : undefined;
-  const viewLabel = OPTIONS.find((o) => o.mode === view)?.label ?? "";
+  const shown = view && view !== "chat" ? note.outputs[view] : undefined;
+  const viewLabel = view ? VIEW_LABEL[view] : "";
+  const originalHasTable = hasMarkdownTable(note.content);
 
   return (
-    <AppShell title={note.title} subtitle={note.fileName} hideAssistantFab>
+    <AppShell
+      title={
+        <EditableTitle
+          value={note.title}
+          onSave={(t) => noteActions.rename(note.id, t)}
+          ariaLabel="Rename note"
+        />
+      }
+      subtitle={note.fileName}
+      hideAssistantFab
+    >
       <Link
         to="/notes"
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary"
@@ -136,7 +165,17 @@ function NoteDetailPage() {
         </div>
       )}
 
-      {shown ? (
+      {view === "chat" ? (
+        <>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold">{viewLabel}</h2>
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setView(null)}>
+              <ArrowLeft size={16} /> Back to note
+            </Button>
+          </div>
+          <NoteChat noteTitle={note.title} noteContent={note.content} />
+        </>
+      ) : shown ? (
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold">{viewLabel}</h2>
@@ -149,13 +188,25 @@ function NoteDetailPage() {
           ) : view === "quiz" ? (
             <QuizView questions={parseQuiz(shown)} />
           ) : (
-            <Markdown>{shown}</Markdown>
+            (() => {
+              const { chart, markdown } = extractChart(shown);
+              return (
+                <>
+                  {chart && <NoteChart spec={chart} />}
+                  <Markdown>{markdown}</Markdown>
+                </>
+              );
+            })()
           )}
         </section>
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-2 text-base font-bold">Original content</h2>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{note.content}</p>
+          <h2 className="mb-3 text-base font-bold">Original content</h2>
+          {originalHasTable ? (
+            <Markdown>{note.content}</Markdown>
+          ) : (
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">{note.content}</p>
+          )}
         </section>
       )}
 
@@ -179,7 +230,7 @@ function NoteDetailPage() {
           <SheetHeader className="text-left">
             <SheetTitle>What should I make from this note?</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 grid grid-cols-2 gap-3 pb-4">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             {OPTIONS.map(({ mode, label, icon: Icon }) => (
               <Button
                 key={mode}
@@ -197,6 +248,19 @@ function NoteDetailPage() {
               </Button>
             ))}
           </div>
+          <Button
+            variant="outline"
+            disabled={pending !== null}
+            onClick={() => {
+              setOpen(false);
+              setView("chat");
+            }}
+            className="mt-3 h-14 w-full gap-2 rounded-2xl text-sm font-bold"
+          >
+            <MessageCircle size={20} />
+            Ask about this note
+          </Button>
+          <div className="pb-2" />
         </SheetContent>
       </Sheet>
     </AppShell>
