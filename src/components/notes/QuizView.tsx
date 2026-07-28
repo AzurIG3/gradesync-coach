@@ -1,8 +1,32 @@
-import { useState } from "react";
-import { Check, X, RotateCw, Trophy } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/notes-parse";
+
+type Breakdown = { topic: string; correct: number; total: number; pct: number };
+
+function computeBreakdown(
+  questions: QuizQuestion[],
+  answers: number[],
+): Breakdown[] {
+  const map = new Map<string, { correct: number; total: number }>();
+  questions.forEach((q, i) => {
+    const t = q.topic?.trim() || "Other";
+    const row = map.get(t) ?? { correct: 0, total: 0 };
+    row.total += 1;
+    if (answers[i] === q.answerIndex) row.correct += 1;
+    map.set(t, row);
+  });
+  return [...map.entries()]
+    .map(([topic, r]) => ({
+      topic,
+      correct: r.correct,
+      total: r.total,
+      pct: r.total ? r.correct / r.total : 0,
+    }))
+    .sort((a, b) => b.pct - a.pct);
+}
 
 export function QuizView({ questions }: { questions: QuizQuestion[] }) {
   const [i, setI] = useState(0);
@@ -10,6 +34,8 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
   const [answers, setAnswers] = useState<number[]>([]);
   const [done, setDone] = useState(false);
   const [review, setReview] = useState(false);
+
+  const hasTopics = useMemo(() => questions.some((q) => q.topic), [questions]);
 
   if (!questions.length) {
     return (
@@ -33,8 +59,13 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
       0,
     );
     const pct = Math.round((score / questions.length) * 100);
+    const breakdown = hasTopics ? computeBreakdown(questions, answers) : [];
+    const strong = breakdown.filter((b) => b.pct >= 0.75);
+    const weak = breakdown.filter((b) => b.pct < 0.5);
+    const okay = breakdown.filter((b) => b.pct >= 0.5 && b.pct < 0.75);
+
     return (
-      <div className="flex flex-col items-center py-6 text-center">
+      <div className="flex flex-col items-center py-4 text-center">
         <span className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
           <Trophy size={30} />
         </span>
@@ -42,9 +73,37 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
         <p className="mt-1 text-3xl font-black text-primary">
           {score}/{questions.length}
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          You got {pct}% correct
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">You got {pct}% correct</p>
+
+        {hasTopics && breakdown.length > 0 && (
+          <div className="mt-6 w-full space-y-4 text-left">
+            {strong.length > 0 && (
+              <BreakdownGroup
+                title="Strong"
+                tone="success"
+                icon={<TrendingUp size={16} />}
+                items={strong}
+              />
+            )}
+            {okay.length > 0 && (
+              <BreakdownGroup
+                title="Okay"
+                tone="warning"
+                icon={<Check size={16} />}
+                items={okay}
+              />
+            )}
+            {weak.length > 0 && (
+              <BreakdownGroup
+                title="Needs review"
+                tone="danger"
+                icon={<AlertTriangle size={16} />}
+                items={weak}
+              />
+            )}
+          </div>
+        )}
+
         <div className="mt-6 flex w-full flex-col gap-2">
           <Button
             size="lg"
@@ -56,12 +115,7 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
           >
             Review answers
           </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full rounded-xl"
-            onClick={reset}
-          >
+          <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={reset}>
             <RotateCw size={16} /> Retake quiz
           </Button>
         </div>
@@ -83,6 +137,9 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
             {userPick === q.answerIndex ? "Correct" : "Incorrect"}
           </span>
         </div>
+        {q.topic && (
+          <p className="mb-2 text-xs font-semibold text-primary">From: {q.topic}</p>
+        )}
         <h3 className="mb-4 text-base font-bold leading-snug">{q.question}</h3>
         <div className="flex flex-col gap-2">
           {q.options.map((opt, idx) => {
@@ -167,6 +224,11 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
         </div>
       </div>
 
+      {q.topic && (
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
+          {q.topic}
+        </p>
+      )}
       <h3 className="mb-4 text-base font-bold leading-snug">{q.question}</h3>
 
       <div className="flex flex-col gap-2">
@@ -202,6 +264,50 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function BreakdownGroup({
+  title,
+  tone,
+  icon,
+  items,
+}: {
+  title: string;
+  tone: "success" | "warning" | "danger";
+  icon: React.ReactNode;
+  items: Breakdown[];
+}) {
+  const toneClasses =
+    tone === "success"
+      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+      : tone === "warning"
+        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+        : "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+  const barClasses =
+    tone === "success" ? "bg-emerald-500" : tone === "warning" ? "bg-amber-500" : "bg-rose-500";
+  return (
+    <div className={cn("rounded-2xl border-2 p-3", toneClasses)}>
+      <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
+        {icon}
+        {title}
+      </div>
+      <ul className="space-y-2">
+        {items.map((b) => (
+          <li key={b.topic}>
+            <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 truncate font-semibold text-foreground">{b.topic}</span>
+              <span className="shrink-0 text-xs font-bold text-foreground">
+                {b.correct}/{b.total}
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-background/60">
+              <div className={cn("h-full", barClasses)} style={{ width: `${b.pct * 100}%` }} />
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

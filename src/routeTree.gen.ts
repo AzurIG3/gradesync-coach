@@ -18,6 +18,7 @@ import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NotesIndexRouteImport } from './routes/notes/index'
+import { Route as NotesTestRouteImport } from './routes/notes/test'
 import { Route as NotesNoteIdRouteImport } from './routes/notes/$noteId'
 
 const TimerRoute = TimerRouteImport.update({
@@ -65,6 +66,11 @@ const NotesIndexRoute = NotesIndexRouteImport.update({
   path: '/notes/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotesTestRoute = NotesTestRouteImport.update({
+  id: '/notes/test',
+  path: '/notes/test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotesNoteIdRoute = NotesNoteIdRouteImport.update({
   id: '/notes/$noteId',
   path: '/notes/$noteId',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/subjects': typeof SubjectsRoute
   '/timer': typeof TimerRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/notes/test': typeof NotesTestRoute
   '/notes/': typeof NotesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/subjects': typeof SubjectsRoute
   '/timer': typeof TimerRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/notes/test': typeof NotesTestRoute
   '/notes': typeof NotesIndexRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/subjects': typeof SubjectsRoute
   '/timer': typeof TimerRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
+  '/notes/test': typeof NotesTestRoute
   '/notes/': typeof NotesIndexRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/subjects'
     | '/timer'
     | '/notes/$noteId'
+    | '/notes/test'
     | '/notes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/subjects'
     | '/timer'
     | '/notes/$noteId'
+    | '/notes/test'
     | '/notes'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/subjects'
     | '/timer'
     | '/notes/$noteId'
+    | '/notes/test'
     | '/notes/'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   SubjectsRoute: typeof SubjectsRoute
   TimerRoute: typeof TimerRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
+  NotesTestRoute: typeof NotesTestRoute
   NotesIndexRoute: typeof NotesIndexRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notes/test': {
+      id: '/notes/test'
+      path: '/notes/test'
+      fullPath: '/notes/test'
+      preLoaderRoute: typeof NotesTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes/$noteId': {
       id: '/notes/$noteId'
       path: '/notes/$noteId'
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubjectsRoute: SubjectsRoute,
   TimerRoute: TimerRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
+  NotesTestRoute: NotesTestRoute,
   NotesIndexRoute: NotesIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -19,9 +19,26 @@ export function Markdown({ children }: { children: string }) {
             <ol className="mb-3 list-decimal space-y-1.5 pl-5 last:mb-0">{children}</ol>
           ),
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          h1: ({ children }) => <h1 className="mb-2 mt-4 text-lg font-bold first:mt-0">{children}</h1>,
-          h2: ({ children }) => <h2 className="mb-2 mt-4 text-base font-bold first:mt-0">{children}</h2>,
-          h3: ({ children }) => <h3 className="mb-2 mt-3 text-sm font-bold first:mt-0">{children}</h3>,
+          h1: ({ children }) => (
+            <h1 className="mb-3 mt-6 text-2xl font-extrabold leading-tight tracking-tight first:mt-0">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="mb-2 mt-5 border-b border-border pb-1 text-xl font-bold leading-tight first:mt-0">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="mb-2 mt-4 text-base font-bold leading-snug text-primary first:mt-0">
+              {children}
+            </h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className="mb-1.5 mt-3 text-sm font-bold uppercase tracking-wide text-muted-foreground first:mt-0">
+              {children}
+            </h4>
+          ),
           code: ({ children }) => (
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{children}</code>
           ),

@@ -4,6 +4,7 @@ export type QuizQuestion = {
   options: string[];
   answerIndex: number;
   explanation?: string;
+  topic?: string;
 };
 
 export type ChartSpec = {
@@ -68,7 +69,13 @@ export function parseQuiz(raw: string): QuizQuestion[] {
         : [];
       const answerIndex = typeof o.answerIndex === "number" ? o.answerIndex : -1;
       const explanation = typeof o.explanation === "string" ? o.explanation : undefined;
-      return { question, options, answerIndex, explanation };
+      const topic =
+        typeof o.topic === "string" && o.topic.trim()
+          ? o.topic.trim()
+          : typeof o.note === "string" && o.note.trim()
+            ? o.note.trim()
+            : undefined;
+      return { question, options, answerIndex, explanation, topic };
     })
     .filter(
       (q) => q.question && q.options.length >= 2 && q.answerIndex >= 0 && q.answerIndex < q.options.length,
