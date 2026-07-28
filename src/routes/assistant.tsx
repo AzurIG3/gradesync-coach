@@ -200,3 +200,61 @@ function AssistantPage() {
     </AppShell>
   );
 }
+
+const GENERIC_POOL = [
+  "Explain Newton's laws simply",
+  "Help me understand photosynthesis",
+  "Tips for memorizing Urdu poetry",
+  "Give me a quick study plan for tomorrow",
+  "How do I stay focused while studying?",
+  "Explain the water cycle in simple words",
+  "Best way to memorize math formulas?",
+  "Summarize World War II in 5 points",
+];
+
+type SubjectLike = { name: string; examDate?: string };
+type NoteLike = { title: string; createdAt: string };
+
+function buildSuggestions(subjects: SubjectLike[], notes: NoteLike[]): string[] {
+  const pool: string[] = [];
+  const today = todayISO();
+
+  const upcomingExams = subjects
+    .filter((s) => s.examDate && daysBetween(today, s.examDate) >= 0)
+    .sort((a, b) => daysBetween(today, a.examDate!) - daysBetween(today, b.examDate!));
+
+  for (const s of upcomingExams.slice(0, 3)) {
+    const days = daysBetween(today, s.examDate!);
+    pool.push(
+      days <= 7
+        ? `Help me prepare for my ${s.name} exam in ${days} day${days === 1 ? "" : "s"}`
+        : `Help me prepare for my ${s.name} exam`,
+    );
+  }
+
+  const recentNotes = [...notes]
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, 3);
+  for (const n of recentNotes) {
+    const topic = n.title.replace(/\.[^.]+$/, "").trim();
+    if (topic) pool.push(`Explain "${topic}" simply`);
+  }
+
+  for (const s of subjects.slice(0, 3)) {
+    pool.push(`Give me quick revision tips for ${s.name}`);
+  }
+
+  if (pool.length < 3) {
+    for (const g of GENERIC_POOL) {
+      if (!pool.includes(g)) pool.push(g);
+      if (pool.length >= 8) break;
+    }
+  }
+
+  // Rotate based on time so returning users see variety.
+  const unique = Array.from(new Set(pool)).slice(0, 8);
+  const bucket = Math.floor(Date.now() / (1000 * 60 * 60 * 6)); // rotates every 6h
+  const start = unique.length ? bucket % unique.length : 0;
+  return Array.from({ length: Math.min(3, unique.length) }, (_, i) => unique[(start + i) % unique.length]);
+}
+
