@@ -64,6 +64,12 @@ export const noteActions = {
     notes = notes.filter((n) => n.id !== id);
     persist();
   },
+  rename(id: string, title: string) {
+    const t = title.trim();
+    if (!t) return;
+    notes = notes.map((n) => (n.id === id ? { ...n, title: t } : n));
+    persist();
+  },
   setOutput(id: string, mode: keyof NoteOutputs, text: string) {
     notes = notes.map((n) => (n.id === id ? { ...n, outputs: { ...n.outputs, [mode]: text } } : n));
     persist();

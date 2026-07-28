@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
 import { extractTextFromFile } from "@/lib/extract-text";
 import { useNotes, noteActions } from "@/lib/notes-store";
+import { RenameIconButton } from "@/components/notes/EditableTitle";
 
 export const Route = createFileRoute("/notes/")({
   component: NotesPage,
@@ -132,7 +133,7 @@ function NotesPage() {
         {notes.map((n) => (
           <div
             key={n.id}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
+            className="flex items-center gap-2 rounded-2xl border border-border bg-card p-4"
           >
             <Link
               to="/notes/$noteId"
@@ -142,6 +143,7 @@ function NotesPage() {
               <p className="truncate text-base font-bold">{n.title}</p>
               <p className="truncate text-xs text-muted-foreground">{n.fileName}</p>
             </Link>
+            <RenameIconButton value={n.title} onSave={(t) => noteActions.rename(n.id, t)} />
             <button
               aria-label="Delete note"
               onClick={() => noteActions.remove(n.id)}

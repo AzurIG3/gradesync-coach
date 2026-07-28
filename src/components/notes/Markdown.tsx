@@ -30,6 +30,26 @@ export function Markdown({ children }: { children: string }) {
               {children}
             </a>
           ),
+          table: ({ children }) => (
+            <div className="mb-3 -mx-1 overflow-x-auto last:mb-0">
+              <table className="min-w-full border-collapse overflow-hidden rounded-lg border border-border text-xs">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => <tr className="border-b border-border last:border-0">{children}</tr>,
+          th: ({ children }) => (
+            <th className="border-r border-border px-2 py-1.5 text-left font-bold last:border-0">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border-r border-border px-2 py-1.5 align-top last:border-0">
+              {children}
+            </td>
+          ),
         }}
       >
         {children}
