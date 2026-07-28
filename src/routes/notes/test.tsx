@@ -39,15 +39,16 @@ function SectionTestPage() {
   const { ids } = Route.useSearch();
   const navigate = useNavigate();
   const idKey = ids ?? "";
-  const idList = useMemo(() => idKey.split(",").filter(Boolean), [idKey]);
+  const idList = useMemo<string[]>(() => idKey.split(",").filter(Boolean), [idKey]);
   const allNotes = useNotes<Note[]>((all: Note[]) => all);
-  const notes = useMemo(
+  const notes = useMemo<Note[]>(
     () =>
       idList
-        .map((id) => allNotes.find((n) => n.id === id))
-        .filter((n): n is Note => Boolean(n)),
+        .map((id: string) => allNotes.find((n: Note) => n.id === id))
+        .filter((n: Note | undefined): n is Note => Boolean(n)),
     [idList, allNotes],
   );
+
 
 
   const [loading, setLoading] = useState(false);
