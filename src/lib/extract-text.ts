@@ -44,8 +44,41 @@ export async function extractTextFromFile(file: File, apiKey: string): Promise<E
     const wb = XLSXLib.read(await file.arrayBuffer(), { type: "array" });
     const parts: string[] = [];
     for (const sheet of wb.SheetNames) {
+      const rows = XLSXLib.utils.sheet_to_json<unknown[]>(wb.Sheets[sheet], {
+        header: 1,
+        blankrows: false,
+        defval: "",
+      });
       parts.push(`## ${sheet}`);
-      parts.push(XLSXLib.utils.sheet_to_csv(wb.Sheets[sheet]));
+      if (!rows.length) {
+        parts.push("");
+        continue;
+      }
+      const width = Math.max(...rows.map((r) => (Array.isArray(r) ? r.length : 0)));
+      if (width === 0) {
+        parts.push("");
+        continue;
+      }
+      const norm = (r: unknown[]) => {
+        const out: string[] = [];
+        for (let i = 0; i < width; i++) {
+          const v = r[i];
+          out.push(String(v ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ").trim());
+        }
+        return out;
+      };
+      const header = norm(rows[0] as unknown[]);
+      // If header row is all empty, synthesize column names.
+      const finalHeader = header.every((h) => !h)
+        ? Array.from({ length: width }, (_, i) => `Col ${i + 1}`)
+        : header.map((h, i) => h || `Col ${i + 1}`);
+      parts.push(`| ${finalHeader.join(" | ")} |`);
+      parts.push(`| ${finalHeader.map(() => "---").join(" | ")} |`);
+      const bodyStart = header.every((h) => !h) ? 0 : 1;
+      for (let i = bodyStart; i < rows.length; i++) {
+        parts.push(`| ${norm(rows[i] as unknown[]).join(" | ")} |`);
+      }
+      parts.push("");
     }
     return { ok: true, text: parts.join("\n").trim() };
   }
