@@ -83,11 +83,10 @@ function AssistantPage() {
     }
   }
 
-  const suggestions = [
-    "Explain Newton's laws simply",
-    "Help me understand photosynthesis",
-    "Tips for memorizing Urdu poetry",
-  ];
+  const subjects = useStore((s) => s.subjects);
+  const notes = useNotes((n) => n);
+  const suggestions = useMemo(() => buildSuggestions(subjects, notes), [subjects, notes]);
+
 
   return (
     <AppShell title="Study Assistant" subtitle="Ask anything about your subjects">
