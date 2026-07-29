@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Send, Sparkles, KeyRound, ExternalLink } from "lucide-react";
+import { Send, Sparkles, KeyRound, ExternalLink, RotateCcw, ArrowDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { askAssistant } from "@/lib/assistant.functions";
@@ -53,6 +53,28 @@ function AssistantPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  async function runRequest(history: Msg[]) {
+    setLoading(true);
+    setCooldown(Math.ceil(COOLDOWN_MS / 1000));
+    try {
+      const res = await askAssistant({ data: { messages: history, apiKey: getUserApiKey() } });
+      setMessages((m) => [...m, { role: "assistant", content: res.reply, kind: res.kind }]);
+    } catch (e) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content:
+            "Oops — I couldn't reach the assistant. Tap Retry to try again.",
+          kind: "error",
+        },
+      ]);
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
@@ -62,25 +84,27 @@ function AssistantPage() {
     const next: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(next);
     setInput("");
-    setLoading(true);
-    setCooldown(Math.ceil(COOLDOWN_MS / 1000));
-    try {
-      const res = await askAssistant({ data: { messages: next, apiKey: getUserApiKey() } });
-      setMessages((m) => [...m, { role: "assistant", content: res.reply, kind: res.kind }]);
+    await runRequest(next);
+  }
 
-    } catch (e) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content:
-            "Oops — I couldn't reach the assistant. Please check your internet and try again.",
-        },
-      ]);
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+  async function retryLast() {
+    if (loading) return;
+    // Drop trailing assistant messages until the last user message.
+    let cutoff = messages.length;
+    while (cutoff > 0 && messages[cutoff - 1].role === "assistant") cutoff--;
+    if (cutoff === 0) return;
+    const trimmed = messages.slice(0, cutoff);
+    setMessages(trimmed);
+    lastSentRef.current = Date.now();
+    await runRequest(trimmed);
+  }
+
+  async function continueLast() {
+    if (loading) return;
+    const next: Msg[] = [...messages, { role: "user", content: "Please continue where you left off." }];
+    setMessages(next);
+    lastSentRef.current = Date.now();
+    await runRequest(next);
   }
 
   const subjects = useStore((s) => s.subjects);
@@ -143,7 +167,7 @@ function AssistantPage() {
             ) : (
               <div
                 key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
               >
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
@@ -154,6 +178,31 @@ function AssistantPage() {
                 >
                   {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
                 </div>
+                {m.role === "assistant" &&
+                  i === messages.length - 1 &&
+                  !loading &&
+                  (m.kind === "truncated" || m.kind === "error") && (
+                    <div className="mt-2 flex gap-2">
+                      {m.kind === "truncated" && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={continueLast}
+                          className="rounded-full text-xs"
+                        >
+                          <ArrowDown size={14} className="mr-1" /> Continue
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={retryLast}
+                        className="rounded-full text-xs"
+                      >
+                        <RotateCcw size={14} className="mr-1" /> Retry
+                      </Button>
+                    </div>
+                  )}
               </div>
             ),
           )}
