@@ -73,19 +73,40 @@ Shape:
     const url = `${AI_API_BASE}/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(
       key,
     )}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: "user", parts: [{ text: combined }] }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 2560,
-          responseMimeType: "application/json",
-        },
-      }),
-    });
+    // Hard timeout so the UI is never stuck waiting forever on a hung request.
+    const controller = new AbortController();
+    const TIMEOUT_MS = 75_000;
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: combined }] }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 2560,
+            responseMimeType: "application/json",
+          },
+        }),
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      const aborted = (err as { name?: string })?.name === "AbortError";
+      console.error("Section test fetch failed:", err);
+      return {
+        ok: false as const,
+        kind: "error" as const,
+        message: aborted
+          ? "The AI took too long to reply. Try fewer notes, or try again in a moment."
+          : "We couldn't reach the AI. Check your connection and try again.",
+      };
+    }
+    clearTimeout(timer);
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
