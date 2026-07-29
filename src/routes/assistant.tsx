@@ -167,7 +167,7 @@ function AssistantPage() {
             ) : (
               <div
                 key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
               >
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
@@ -178,6 +178,31 @@ function AssistantPage() {
                 >
                   {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
                 </div>
+                {m.role === "assistant" &&
+                  i === messages.length - 1 &&
+                  !loading &&
+                  (m.kind === "truncated" || m.kind === "error") && (
+                    <div className="mt-2 flex gap-2">
+                      {m.kind === "truncated" && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={continueLast}
+                          className="rounded-full text-xs"
+                        >
+                          <ArrowDown size={14} className="mr-1" /> Continue
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={retryLast}
+                        className="rounded-full text-xs"
+                      >
+                        <RotateCcw size={14} className="mr-1" /> Retry
+                      </Button>
+                    </div>
+                  )}
               </div>
             ),
           )}
