@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Send, Sparkles, KeyRound, ExternalLink } from "lucide-react";
+import { Send, Sparkles, KeyRound, ExternalLink, RotateCcw, ArrowDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { askAssistant } from "@/lib/assistant.functions";
