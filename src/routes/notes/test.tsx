@@ -230,6 +230,13 @@ function SectionTestPage() {
             </>
           )}
           <Button
+            size="lg"
+            className="mt-3 w-full rounded-xl"
+            onClick={() => setAttempt((a) => a + 1)}
+          >
+            Try again
+          </Button>
+          <Button
             variant="outline"
             size="lg"
             className="mt-3 w-full rounded-xl"
