@@ -49,7 +49,7 @@ export const askAssistant = createServerFn({ method: "POST" })
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents,
-        generationConfig: { temperature: 0.6, maxOutputTokens: 800 },
+        generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
       }),
     });
 
@@ -80,13 +80,52 @@ export const askAssistant = createServerFn({ method: "POST" })
 
 
     const json = (await res.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      candidates?: Array<{
+        content?: { parts?: Array<{ text?: string }> };
+        finishReason?: string;
+      }>;
+      promptFeedback?: { blockReason?: string };
     };
+    const candidate = json.candidates?.[0];
     const text =
-      json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-    return {
-      reply: text.trim() || "Sorry, I couldn't come up with an answer. Try rephrasing?",
-      kind: "ok" as const,
-    };
+      candidate?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    const finish = candidate?.finishReason;
+    const blocked = json.promptFeedback?.blockReason;
+
+    if (blocked) {
+      return {
+        reply:
+          "I can't answer that one — it was blocked by the safety filter. Try rephrasing your question.",
+        kind: "blocked" as const,
+      };
+    }
+
+    if (finish === "SAFETY" || finish === "RECITATION") {
+      return {
+        reply:
+          (text.trim() ? text.trim() + "\n\n" : "") +
+          "_Response was stopped by the safety filter. Try rephrasing your question._",
+        kind: "blocked" as const,
+      };
+    }
+
+    if (finish === "MAX_TOKENS") {
+      return {
+        reply:
+          (text.trim() || "…") +
+          "\n\n_Response was cut off because it got too long. Tap Continue to keep going._",
+        kind: "truncated" as const,
+      };
+    }
+
+    if (!text.trim()) {
+      return {
+        reply:
+          "Sorry, I couldn't come up with an answer. Tap retry or try rephrasing.",
+        kind: "error" as const,
+      };
+    }
+
+    return { reply: text.trim(), kind: "ok" as const };
   });
 
