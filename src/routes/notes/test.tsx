@@ -54,15 +54,24 @@ function SectionTestPage() {
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
-  const [started, setStarted] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Elapsed-time ticker so the user sees the app is working, not frozen.
+  useEffect(() => {
+    if (!loading) return;
+    setElapsed(0);
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   useEffect(() => {
-    if (started || !notes.length) return;
-    setStarted(true);
+    if (!notes.length) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
+      setQuestions(null);
       try {
         const res = (await generateSectionTest({
           data: {
@@ -101,7 +110,7 @@ function SectionTestPage() {
     return () => {
       cancelled = true;
     };
-  }, [started, notes]);
+  }, [attempt, notes]);
 
   if (!idList.length || !notes.length) {
     return (
@@ -115,6 +124,16 @@ function SectionTestPage() {
       </AppShell>
     );
   }
+
+  const totalChars = notes.reduce((s, n) => s + n.content.length, 0);
+  const progressStage =
+    elapsed < 6
+      ? "Reading your notes…"
+      : elapsed < 18
+        ? "Thinking up good questions…"
+        : elapsed < 40
+          ? "Almost there — writing the last few…"
+          : "Just a bit longer, hang tight…";
 
   return (
     <AppShell
@@ -152,9 +171,38 @@ function SectionTestPage() {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-6 text-sm text-muted-foreground">
-          <Loader2 className="animate-spin" size={16} />
-          Building your section test…
+        <div className="rounded-2xl border border-border bg-card px-4 py-6">
+          <div className="flex items-center gap-3">
+            <Loader2 className="shrink-0 animate-spin text-primary" size={20} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">
+                Building your test from {notes.length} note{notes.length === 1 ? "" : "s"}…
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {progressStage} This can take up to a minute for large notes.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[11px] font-bold tabular-nums text-muted-foreground">
+              {elapsed}s
+            </span>
+          </div>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${Math.min(95, (elapsed / 60) * 100)}%` }}
+            />
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {(totalChars / 1000).toFixed(0)}k characters of study material · one combined AI request
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 w-full rounded-xl"
+            disabled
+          >
+            Working…
+          </Button>
         </div>
       )}
 
@@ -181,6 +229,13 @@ function SectionTestPage() {
               </a>
             </>
           )}
+          <Button
+            size="lg"
+            className="mt-3 w-full rounded-xl"
+            onClick={() => setAttempt((a) => a + 1)}
+          >
+            Try again
+          </Button>
           <Button
             variant="outline"
             size="lg"
