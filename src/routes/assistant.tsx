@@ -53,6 +53,28 @@ function AssistantPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  async function runRequest(history: Msg[]) {
+    setLoading(true);
+    setCooldown(Math.ceil(COOLDOWN_MS / 1000));
+    try {
+      const res = await askAssistant({ data: { messages: history, apiKey: getUserApiKey() } });
+      setMessages((m) => [...m, { role: "assistant", content: res.reply, kind: res.kind }]);
+    } catch (e) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content:
+            "Oops — I couldn't reach the assistant. Tap Retry to try again.",
+          kind: "error",
+        },
+      ]);
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
@@ -62,25 +84,27 @@ function AssistantPage() {
     const next: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(next);
     setInput("");
-    setLoading(true);
-    setCooldown(Math.ceil(COOLDOWN_MS / 1000));
-    try {
-      const res = await askAssistant({ data: { messages: next, apiKey: getUserApiKey() } });
-      setMessages((m) => [...m, { role: "assistant", content: res.reply, kind: res.kind }]);
+    await runRequest(next);
+  }
 
-    } catch (e) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content:
-            "Oops — I couldn't reach the assistant. Please check your internet and try again.",
-        },
-      ]);
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+  async function retryLast() {
+    if (loading) return;
+    // Drop trailing assistant messages until the last user message.
+    let cutoff = messages.length;
+    while (cutoff > 0 && messages[cutoff - 1].role === "assistant") cutoff--;
+    if (cutoff === 0) return;
+    const trimmed = messages.slice(0, cutoff);
+    setMessages(trimmed);
+    lastSentRef.current = Date.now();
+    await runRequest(trimmed);
+  }
+
+  async function continueLast() {
+    if (loading) return;
+    const next: Msg[] = [...messages, { role: "user", content: "Please continue where you left off." }];
+    setMessages(next);
+    lastSentRef.current = Date.now();
+    await runRequest(next);
   }
 
   const subjects = useStore((s) => s.subjects);
