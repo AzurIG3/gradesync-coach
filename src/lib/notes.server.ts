@@ -90,11 +90,15 @@ export async function callGemini(
   parts: Part[],
   systemPrompt: string,
   userProvidedKey: boolean,
+  opts?: { temperature?: number; maxOutputTokens?: number },
 ): Promise<GeminiResult> {
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: "user", parts }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+    generationConfig: {
+      temperature: opts?.temperature ?? 0.4,
+      maxOutputTokens: opts?.maxOutputTokens ?? 2048,
+    },
   });
 
   const models = [NOTES_MODEL, AI_MODEL];
