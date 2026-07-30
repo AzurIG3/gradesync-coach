@@ -10,6 +10,8 @@
  */
 
 export const AI_MODEL = "gemini-flash-latest";
+/** Faster/cheaper model for bulk generation (section tests). */
+export const AI_MODEL_FAST = "gemini-flash-lite-latest";
 export const AI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 /** localStorage key where an optional user-supplied API key is kept. */
