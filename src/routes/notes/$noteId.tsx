@@ -201,7 +201,7 @@ function NoteDetailPage() {
         </section>
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-3 text-base font-bold">Original content</h2>
+          <h2 className="mb-3 text-base font-bold">Cleaned notes</h2>
           {originalHasTable ? (
             <Markdown>{note.content}</Markdown>
           ) : (

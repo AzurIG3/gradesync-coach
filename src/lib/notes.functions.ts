@@ -25,6 +25,25 @@ export const extractFileText = createServerFn({ method: "POST" })
     );
   });
 
+/** Clean up raw extracted/OCR text into well-structured notes (no summarising). */
+export const cleanNoteText = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const o = (input ?? {}) as Record<string, unknown>;
+    const text = str(o.text, 60_000);
+    if (!text.trim()) throw new Error("Nothing to clean");
+    return { text, apiKey: str(o.apiKey, 200).trim() };
+  })
+  .handler(async ({ data }) => {
+    const { resolveApiKey } = await import("./ai.server");
+    const { callGemini, CLEANUP_PROMPT } = await import("./notes.server");
+    const key = resolveApiKey(data.apiKey);
+    return callGemini(key, [{ text: data.text }], CLEANUP_PROMPT, Boolean(data.apiKey), {
+      temperature: 0.2,
+      maxOutputTokens: 8192,
+    });
+  });
+
+
 /** Generate a summary / key details / flashcards / quiz from note text. */
 export const generateFromNote = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {

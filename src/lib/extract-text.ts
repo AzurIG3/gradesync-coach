@@ -1,4 +1,4 @@
-import { extractFileText } from "./notes.functions";
+import { cleanNoteText, extractFileText } from "./notes.functions";
 
 export type ExtractResult =
   | { ok: true; text: string }
@@ -21,10 +21,10 @@ const XLSX = /\.(xlsx|xls|csv)$/i;
 const TXT = /\.(txt|md|rtf)$/i;
 
 /**
- * Turns an uploaded file into plain text.
+ * Turns an uploaded file into raw plain text.
  * Word / Excel / text are parsed in the browser; PDFs and photos go to Gemini.
  */
-export async function extractTextFromFile(file: File, apiKey: string): Promise<ExtractResult> {
+async function extractRawTextFromFile(file: File, apiKey: string): Promise<ExtractResult> {
   const name = file.name;
 
   if (TXT.test(name) || file.type.startsWith("text/")) {
@@ -94,4 +94,28 @@ export async function extractTextFromFile(file: File, apiKey: string): Promise<E
     return { ok: false, kind: "error", message: "We couldn't find any readable text in that file." };
   }
   return res;
+}
+
+/**
+ * Extracts text from an uploaded file and then runs an AI cleanup pass that
+ * fixes OCR/extraction errors and reformats the text into clean notes without
+ * summarising. Spreadsheets are already structured, so they skip the cleanup.
+ * If cleanup fails for any reason we keep the raw text rather than blocking.
+ */
+export async function extractTextFromFile(file: File, apiKey: string): Promise<ExtractResult> {
+  const raw = await extractRawTextFromFile(file, apiKey);
+  if (!raw.ok) return raw;
+
+  const text = raw.text.trim();
+  if (!text || XLSX.test(file.name)) return { ok: true, text };
+
+  try {
+    const res = (await cleanNoteText({ data: { text: text.slice(0, 60_000), apiKey } })) as
+      | { ok: true; text: string }
+      | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+    if (res.ok && res.text.trim().length > 0) return { ok: true, text: res.text.trim() };
+  } catch (e) {
+    console.error("Note cleanup failed, keeping raw text", e);
+  }
+  return { ok: true, text };
 }

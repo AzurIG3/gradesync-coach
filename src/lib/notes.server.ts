@@ -39,6 +39,20 @@ export const MODE_PROMPTS: Record<GenMode, string> = {
 export const EXTRACT_PROMPT =
   "Extract ALL readable text content from this file exactly as it appears. Keep headings, lists and line breaks. Do not summarize, do not add any commentary. If the file has no readable text, reply with exactly: NO_TEXT_FOUND";
 
+/** Cleans raw extracted/OCR text into readable notes WITHOUT losing information. */
+export const CLEANUP_PROMPT = `You are cleaning up text that was extracted from a scanned page, photo or document. The extraction may contain OCR mistakes from blur, warping, shadows or bad lighting.
+
+Your job:
+1. Fix obvious OCR/extraction errors using context: misread words and characters (e.g. "rn" -> "m", "0" -> "O", "l" -> "1"), garbled characters, broken or split sentences, joined words, stray symbols and page artifacts (page numbers, watermark fragments, scan noise).
+2. Reformat into clean, well-structured notes: proper paragraphs, correct spacing, correct punctuation and capitalisation, Markdown headings (\`##\` / \`###\`) where the source clearly has headings, and bullet or numbered lists where the source has lists.
+3. Keep any tables as Markdown tables. Keep formulas and math as they are (use $...$ / $$...$$ if the source is mathematical).
+
+Strict rules:
+- PRESERVE the original meaning and EVERY fact, number, name, date, definition and example. Do NOT summarize, shorten, merge or drop any information.
+- Do NOT add new facts, explanations or commentary of your own.
+- If a word is truly unreadable, keep your best guess from context rather than inventing new content.
+- Reply with ONLY the cleaned text. No preamble, no code fences around the whole answer.`;
+
 type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 export type GeminiResult =
@@ -76,11 +90,15 @@ export async function callGemini(
   parts: Part[],
   systemPrompt: string,
   userProvidedKey: boolean,
+  opts?: { temperature?: number; maxOutputTokens?: number },
 ): Promise<GeminiResult> {
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: "user", parts }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+    generationConfig: {
+      temperature: opts?.temperature ?? 0.4,
+      maxOutputTokens: opts?.maxOutputTokens ?? 2048,
+    },
   });
 
   const models = [NOTES_MODEL, AI_MODEL];
