@@ -126,7 +126,7 @@ function NotesPage() {
       >
         {busy ? (
           <span className="flex items-center gap-2">
-            <Loader2 className="animate-spin" size={20} /> Reading your file…
+            <Loader2 className="animate-spin" size={20} /> Reading &amp; cleaning your file…
           </span>
         ) : (
           <span className="flex items-center gap-2">
