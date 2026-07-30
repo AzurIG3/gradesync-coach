@@ -21,10 +21,10 @@ const XLSX = /\.(xlsx|xls|csv)$/i;
 const TXT = /\.(txt|md|rtf)$/i;
 
 /**
- * Turns an uploaded file into plain text.
+ * Turns an uploaded file into raw plain text.
  * Word / Excel / text are parsed in the browser; PDFs and photos go to Gemini.
  */
-export async function extractTextFromFile(file: File, apiKey: string): Promise<ExtractResult> {
+async function extractRawTextFromFile(file: File, apiKey: string): Promise<ExtractResult> {
   const name = file.name;
 
   if (TXT.test(name) || file.type.startsWith("text/")) {
