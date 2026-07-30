@@ -2,8 +2,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { actions, useStore } from "@/lib/store";
 import { useEffect, useRef, useState } from "react";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { Play, Pause, RotateCcw, BellOff, Volume2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import {
+  ALARM_OPTIONS,
+  getAlarmSound,
+  playAlarm,
+  primeAudio,
+  setAlarmSound,
+  type AlarmId,
+} from "@/lib/alarm";
+import {
+  notifyAlways,
+  notifyPermission,
+  requestNotifyPermission,
+  setFocusSilenced,
+} from "@/lib/focus-mode";
 
 export const Route = createFileRoute("/timer")({
   head: () => ({
@@ -30,6 +44,20 @@ function TimerPage() {
   const [secondsLeft, setSecondsLeft] = useState(savedTimer.focusMin * 60);
   const [running, setRunning] = useState(false);
   const totalRef = useRef(savedTimer.focusMin * 60);
+  const [alarm, setAlarm] = useState<AlarmId>("chime");
+  const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    setAlarm(getAlarmSound());
+  }, []);
+
+  // Focus mode: silence the app's own notifications while a session runs.
+  useEffect(() => {
+    const on = running && phase !== "idle";
+    setFocusSilenced(on);
+    setMuted(on);
+    return () => setFocusSilenced(false);
+  }, [running, phase]);
 
   useEffect(() => {
     if (phase === "idle") {
@@ -45,10 +73,14 @@ function TimerPage() {
         if (s > 1) return s - 1;
         // transition
         if (phase === "focus") {
+          playAlarm(alarm);
+          notifyAlways("Focus session done", "Time for a break.");
           totalRef.current = breakMin * 60;
           setPhase("break");
           return breakMin * 60;
         }
+        playAlarm(alarm);
+        notifyAlways("Break over", "Ready for another focus session?");
         setRunning(false);
         setPhase("idle");
         totalRef.current = focusMin * 60;
@@ -56,9 +88,11 @@ function TimerPage() {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [running, phase, breakMin, focusMin]);
+  }, [running, phase, breakMin, focusMin, alarm]);
 
   const start = () => {
+    primeAudio();
+    if (notifyPermission() === "default") void requestNotifyPermission();
     if (phase === "idle") {
       actions.setTimerPrefs(focusMin, breakMin);
       totalRef.current = focusMin * 60;
@@ -175,6 +209,44 @@ function TimerPage() {
         >
           <RotateCcw size={22} />
         </button>
+      </div>
+
+      {muted && (
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-muted/50 px-4 py-3">
+          <BellOff size={18} className="shrink-0 text-primary" />
+          <p className="text-sm font-semibold">
+            Notifications paused during your focus session.
+          </p>
+        </div>
+      )}
+
+      {/* Alarm sound */}
+      <div className="mb-4 rounded-2xl border bg-card p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Volume2 size={18} className="text-primary" />
+          <p className="text-sm font-semibold">End-of-session sound</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ALARM_OPTIONS.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => {
+                setAlarm(o.id);
+                setAlarmSound(o.id);
+                primeAudio();
+                playAlarm(o.id);
+              }}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                alarm === o.id ? "bg-primary text-primary-foreground shadow" : "bg-muted"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Tap to preview and pick. Change it any time in Settings.
+        </p>
       </div>
 
       {/* Durations */}
