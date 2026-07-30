@@ -1,4 +1,4 @@
-import { extractFileText } from "./notes.functions";
+import { cleanNoteText, extractFileText } from "./notes.functions";
 
 export type ExtractResult =
   | { ok: true; text: string }
