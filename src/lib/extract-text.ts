@@ -95,3 +95,27 @@ async function extractRawTextFromFile(file: File, apiKey: string): Promise<Extra
   }
   return res;
 }
+
+/**
+ * Extracts text from an uploaded file and then runs an AI cleanup pass that
+ * fixes OCR/extraction errors and reformats the text into clean notes without
+ * summarising. Spreadsheets are already structured, so they skip the cleanup.
+ * If cleanup fails for any reason we keep the raw text rather than blocking.
+ */
+export async function extractTextFromFile(file: File, apiKey: string): Promise<ExtractResult> {
+  const raw = await extractRawTextFromFile(file, apiKey);
+  if (!raw.ok) return raw;
+
+  const text = raw.text.trim();
+  if (!text || XLSX.test(file.name)) return { ok: true, text };
+
+  try {
+    const res = (await cleanNoteText({ data: { text: text.slice(0, 60_000), apiKey } })) as
+      | { ok: true; text: string }
+      | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+    if (res.ok && res.text.trim().length > 0) return { ok: true, text: res.text.trim() };
+  } catch (e) {
+    console.error("Note cleanup failed, keeping raw text", e);
+  }
+  return { ok: true, text };
+}
