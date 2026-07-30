@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { AI_API_BASE } from "./ai-config";
+import { AI_API_BASE, AI_MODEL_FAST } from "./ai-config";
 
 function str(v: unknown, max = 200_000): string {
   return typeof v === "string" ? v.slice(0, max) : "";
@@ -68,9 +68,9 @@ RULES:
 Shape:
 [{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]`;
 
-    // gemini-2.5-flash-lite is meaningfully faster than gemini-2.5-flash for
-    // structured MCQ generation and produces equivalent quality here.
-    const url = `${AI_API_BASE}/models/gemini-2.5-flash-lite:generateContent?key=${encodeURIComponent(
+    // The "-lite-latest" alias always points at the current fast model, so this
+    // never breaks when Google retires a dated model id (which returns 404).
+    const url = `${AI_API_BASE}/models/${AI_MODEL_FAST}:generateContent?key=${encodeURIComponent(
       key,
     )}`;
     // Hard timeout so the UI is never stuck waiting forever on a hung request.

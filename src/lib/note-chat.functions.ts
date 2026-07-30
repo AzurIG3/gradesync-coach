@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { AI_API_BASE } from "./ai-config";
+import { AI_API_BASE, AI_MODEL } from "./ai-config";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -59,7 +59,7 @@ ${data.noteContent}
     }));
 
     // Smart Notes always uses the flash tier.
-    const url = `${AI_API_BASE}/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+    const url = `${AI_API_BASE}/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

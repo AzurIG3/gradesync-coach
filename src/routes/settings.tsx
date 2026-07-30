@@ -1,11 +1,19 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, KeyRound, Monitor, Moon, Sun } from "lucide-react";
+import { Check, KeyRound, Monitor, Moon, Play, Sun, Volume2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { getUserApiKey, setUserApiKey } from "@/lib/ai-config";
 import { useTheme, type Theme } from "@/lib/theme";
+import {
+  ALARM_OPTIONS,
+  getAlarmSound,
+  playAlarm,
+  primeAudio,
+  setAlarmSound,
+  type AlarmId,
+} from "@/lib/alarm";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
@@ -35,6 +43,7 @@ function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
+  const [alarm, setAlarm] = useState<AlarmId>("chime");
 
   const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Light", icon: Sun },
@@ -44,6 +53,7 @@ function SettingsPage() {
 
   useEffect(() => {
     setKey(getUserApiKey());
+    setAlarm(getAlarmSound());
   }, []);
 
   function save() {
@@ -89,6 +99,58 @@ function SettingsPage() {
           </div>
         </section>
 
+
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Volume2 size={18} />
+            </span>
+            <h2 className="text-base font-bold">Timer alarm sound</h2>
+          </div>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Plays when a focus session or break ends. Tap a sound to preview it.
+          </p>
+          <div className="space-y-2">
+            {ALARM_OPTIONS.map((o) => {
+              const active = alarm === o.id;
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => {
+                    setAlarm(o.id);
+                    setAlarmSound(o.id);
+                    primeAudio();
+                    playAlarm(o.id);
+                  }}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition",
+                    active ? "border-primary bg-primary/10" : "border-border bg-background",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                    )}
+                  >
+                    <Play size={14} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">{o.label}</span>
+                    <span className="block text-xs text-muted-foreground">{o.description}</span>
+                  </span>
+                  {active && <Check size={18} className="shrink-0 text-primary" />}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            While a focus session is running, the app pauses its own notifications so you aren\'t
+            interrupted.
+          </p>
+        </section>
 
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">

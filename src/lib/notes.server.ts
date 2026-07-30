@@ -1,7 +1,7 @@
 import { AI_MODEL, AI_API_BASE } from "./ai-config";
 
 /** Preferred model for Smart Notes (flash tier, never Pro). */
-export const NOTES_MODEL = "gemini-2.5-flash";
+export const NOTES_MODEL = "gemini-flash-latest";
 
 export type GenMode = "summary" | "details" | "flashcards" | "quiz";
 
