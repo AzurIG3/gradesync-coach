@@ -78,7 +78,7 @@ function NoteDetailPage() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<Mode | null>(null);
   const [view, setView] = useState<View | null>(null);
-  const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
+  const [gen, setGen] = useState(0);
 
   async function run(mode: Mode) {
     if (pending || !note) return;
