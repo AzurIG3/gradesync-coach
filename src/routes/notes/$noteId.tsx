@@ -25,6 +25,8 @@ import { extractChart, parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
 import { useNotes, noteActions } from "@/lib/notes-store";
+import { dedupeBy, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
+
 
 type Mode = "summary" | "details" | "flashcards" | "quiz";
 type View = Mode | "chat";
