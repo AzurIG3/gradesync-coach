@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { actions, currentStreak, daysBetween, formatDateLong, todayISO, useStore } from "@/lib/store";
@@ -57,7 +58,7 @@ function Home() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <AppShell title={t("hello")} subtitle={formatDateLong(today, locale)}>
+    <AppShell title={t("hello")} subtitle={mounted ? formatDateLong(today, locale) : undefined}>
       {streak > 0 && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-warning/20 px-4 py-1.5 text-sm font-bold text-foreground">
           <Flame size={16} className="text-warning" />
