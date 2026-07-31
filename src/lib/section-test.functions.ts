@@ -91,7 +91,8 @@ Shape:
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: "user", parts: [{ text: combined }] }],
           generationConfig: {
-            temperature: 0.4,
+            temperature: 0.95,
+            topP: 0.95,
             maxOutputTokens: 2560,
             responseMimeType: "application/json",
           },
