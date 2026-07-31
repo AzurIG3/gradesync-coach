@@ -31,10 +31,13 @@ export const MODE_PROMPTS: Record<GenMode, string> = {
     HEADING_HINT +
     CHART_HINT,
   flashcards:
-    'Create 8-12 flashcards from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"q":"short question","a":"short simple answer (1-2 sentences)"}]. Do not include any text before or after the JSON.',
+    'Create 8-12 flashcards from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"q":"short question","a":"short simple answer (1-2 sentences)"}]. Do not include any text before or after the JSON.' +
+    VARIETY_HINT,
   quiz:
-    'Create a 5-question multiple-choice practice quiz from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"question":"...","options":["A option","B option","C option","D option"],"answerIndex":0,"explanation":"one short sentence"}]. Exactly 4 options per question. answerIndex is 0-3. Keep the language simple.',
+    'Create a 5-question multiple-choice practice quiz from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"question":"...","options":["A option","B option","C option","D option"],"answerIndex":0,"explanation":"one short sentence"}]. Exactly 4 options per question. answerIndex is 0-3. Keep the language simple.' +
+    VARIETY_HINT,
 };
+
 
 export const EXTRACT_PROMPT =
   "Extract ALL readable text content from this file exactly as it appears. Keep headings, lists and line breaks. Do not summarize, do not add any commentary. If the file has no readable text, reply with exactly: NO_TEXT_FOUND";
