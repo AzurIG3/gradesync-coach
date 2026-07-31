@@ -215,9 +215,15 @@ function NoteDetailPage() {
             </Button>
           </div>
           {view === "flashcards" ? (
-            <FlashcardsView cards={parseFlashcards(shown)} />
+            <FlashcardsView key={`f${gen}`} cards={parseFlashcards(shown)} />
           ) : view === "quiz" ? (
-            <QuizView questions={parseQuiz(shown)} />
+            <QuizView
+              key={`q${gen}`}
+              questions={parseQuiz(shown)}
+              regenerating={pending === "quiz"}
+              onRegenerate={() => run("quiz")}
+            />
+
           ) : (
             (() => {
               const { chart, markdown } = extractChart(shown);
