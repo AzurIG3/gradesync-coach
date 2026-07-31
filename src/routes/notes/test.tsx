@@ -8,6 +8,7 @@ import { getUserApiKey } from "@/lib/ai-config";
 import { generateSectionTest } from "@/lib/section-test.functions";
 import { useNotes, type Note } from "@/lib/notes-store";
 import { parseQuiz, type QuizQuestion } from "@/lib/notes-parse";
+import { dedupeBy, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
 
 type Search = { ids?: string };
 
@@ -76,6 +77,7 @@ function SectionTestPage() {
         const res = (await generateSectionTest({
           data: {
             notes: notes.map((n) => ({ title: n.title, content: n.content })),
+            avoid: loadAsked(`test:${idKey}`),
             apiKey: getUserApiKey(),
           },
         })) as
@@ -86,7 +88,14 @@ function SectionTestPage() {
           setError({ message: res.message, keyIssue: res.kind !== "error" });
           return;
         }
-        const parsed = parseQuiz(res.text);
+        const all = parseQuiz(res.text);
+        const fresh = dedupeBy(
+          all,
+          (q) => `${q.question} ${q.options.join(" ")}`,
+          loadAsked(`test:${idKey}`),
+        );
+        const parsed = fresh.length ? fresh : all;
+        if (parsed.length) rememberAsked(`test:${idKey}`, parsed.map((q) => q.question));
         if (!parsed.length) {
           setError({
             message: "We couldn't build a test from these notes. Try selecting different ones.",
@@ -110,7 +119,7 @@ function SectionTestPage() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, notes]);
+  }, [attempt, notes, idKey]);
 
   if (!idList.length || !notes.length) {
     return (
@@ -249,7 +258,12 @@ function SectionTestPage() {
 
       {questions && (
         <section className="rounded-2xl border border-border bg-card p-5">
-          <QuizView questions={questions} />
+          <QuizView
+            key={attempt}
+            questions={questions}
+            regenerating={loading}
+            onRegenerate={() => setAttempt((a) => a + 1)}
+          />
         </section>
       )}
     </AppShell>
