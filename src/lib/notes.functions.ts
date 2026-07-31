@@ -60,10 +60,17 @@ export const generateFromNote = createServerFn({ method: "POST" })
     const { resolveApiKey } = await import("./ai.server");
     const { callGemini, MODE_PROMPTS } = await import("./notes.server");
     const key = resolveApiKey(data.apiKey);
+    const varied = data.mode === "quiz" || data.mode === "flashcards";
+    // A per-run nonce nudges the model off its "default" set of questions.
+    const nonce = Math.random().toString(36).slice(2, 10);
+    const parts = varied
+      ? [{ text: `${data.text}\n\n[variation seed: ${nonce} — produce a different selection of questions than any previous attempt]` }]
+      : [{ text: data.text }];
     return callGemini(
       key,
-      [{ text: data.text }],
+      parts,
       MODE_PROMPTS[data.mode],
       Boolean(data.apiKey),
+      varied ? { temperature: 0.95, topP: 0.95 } : undefined,
     );
   });

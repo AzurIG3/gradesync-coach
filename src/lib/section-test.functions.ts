@@ -63,10 +63,13 @@ RULES:
 - Exactly 4 options per question. "answerIndex" is 0-3.
 - Keep the language simple, short sentences. Keep explanations to one short sentence.
 - Cover a mix of easy, medium and slightly harder questions.
+- VARIETY IS REQUIRED: generate a fresh, varied set each time. Deliberately choose different details, angles, phrasings and depth from the most obvious ones, and spread questions across the WHOLE of each note (beginning, middle and end) rather than only the first or most prominent facts. Mix question types (definition, application, cause/effect, comparison, numeric/example based). Assume this content has been tested before — avoid repeating the same questions or wording.
 - Reply with ONLY a valid JSON array — no prose, no code fences, nothing before or after.
 
 Shape:
-[{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]`;
+[{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]
+
+[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]`;
 
     // The "-lite-latest" alias always points at the current fast model, so this
     // never breaks when Google retires a dated model id (which returns 404).
@@ -88,7 +91,8 @@ Shape:
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: "user", parts: [{ text: combined }] }],
           generationConfig: {
-            temperature: 0.4,
+            temperature: 0.95,
+            topP: 0.95,
             maxOutputTokens: 2560,
             responseMimeType: "application/json",
           },
