@@ -51,6 +51,10 @@ function Home() {
   const quotes = lang === "ur" ? QUOTES_UR : QUOTES_EN;
   const quote = quotes[new Date().getDate() % quotes.length];
   const locale = lang === "ur" ? "ur-PK" : undefined;
+  // The server and the phone can be on different dates/timezones, so only
+  // render the formatted date after hydration to avoid a mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <AppShell title={t("hello")} subtitle={formatDateLong(today, locale)}>
