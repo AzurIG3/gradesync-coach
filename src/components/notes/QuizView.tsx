@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle } from "lucide-react";
+import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/notes-parse";
