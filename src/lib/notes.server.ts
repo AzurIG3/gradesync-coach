@@ -97,13 +97,14 @@ export async function callGemini(
   parts: Part[],
   systemPrompt: string,
   userProvidedKey: boolean,
-  opts?: { temperature?: number; maxOutputTokens?: number },
+  opts?: { temperature?: number; maxOutputTokens?: number; topP?: number },
 ): Promise<GeminiResult> {
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: "user", parts }],
     generationConfig: {
       temperature: opts?.temperature ?? 0.4,
+      ...(opts?.topP !== undefined ? { topP: opts.topP } : {}),
       maxOutputTokens: opts?.maxOutputTokens ?? 2048,
     },
   });
