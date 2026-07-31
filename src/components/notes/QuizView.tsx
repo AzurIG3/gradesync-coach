@@ -127,6 +127,19 @@ export function QuizView({
           <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={reset}>
             <RotateCw size={16} /> Retake quiz
           </Button>
+          {onRegenerate && (
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full rounded-xl"
+              disabled={regenerating}
+              onClick={onRegenerate}
+            >
+              <Sparkles size={16} />
+              {regenerating ? "Generating new questions…" : "Generate New Set"}
+            </Button>
+          )}
+
         </div>
       </div>
     );
