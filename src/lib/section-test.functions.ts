@@ -74,7 +74,7 @@ RULES:
 Shape:
 [{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]
 
-[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]`;
+[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]${buildAvoidBlock(data.avoid)}`;
 
     // The "-lite-latest" alias always points at the current fast model, so this
     // never breaks when Google retires a dated model id (which returns 404).
