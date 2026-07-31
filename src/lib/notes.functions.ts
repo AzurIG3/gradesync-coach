@@ -54,17 +54,29 @@ export const generateFromNote = createServerFn({ method: "POST" })
     }
     const text = str(o.text, 60_000);
     if (!text.trim()) throw new Error("Note is empty");
-    return { mode: mode as "summary" | "details" | "flashcards" | "quiz", text, apiKey: str(o.apiKey, 200).trim() };
+    const avoid = Array.isArray(o.avoid)
+      ? o.avoid.map((a) => str(a, 300).trim()).filter(Boolean).slice(-40)
+      : [];
+    return {
+      mode: mode as "summary" | "details" | "flashcards" | "quiz",
+      text,
+      avoid,
+      apiKey: str(o.apiKey, 200).trim(),
+    };
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
-    const { callGemini, MODE_PROMPTS } = await import("./notes.server");
+    const { callGemini, MODE_PROMPTS, buildAvoidBlock } = await import("./notes.server");
     const key = resolveApiKey(data.apiKey);
     const varied = data.mode === "quiz" || data.mode === "flashcards";
     // A per-run nonce nudges the model off its "default" set of questions.
     const nonce = Math.random().toString(36).slice(2, 10);
     const parts = varied
-      ? [{ text: `${data.text}\n\n[variation seed: ${nonce} — produce a different selection of questions than any previous attempt]` }]
+      ? [
+          {
+            text: `${data.text}${buildAvoidBlock(data.avoid)}\n\n[variation seed: ${nonce} — produce a different selection of questions than any previous attempt]`,
+          },
+        ]
       : [{ text: data.text }];
     return callGemini(
       key,
@@ -74,3 +86,4 @@ export const generateFromNote = createServerFn({ method: "POST" })
       varied ? { temperature: 0.95, topP: 0.95 } : undefined,
     );
   });
+

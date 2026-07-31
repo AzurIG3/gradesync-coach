@@ -25,6 +25,8 @@ import { extractChart, parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
 import { useNotes, noteActions } from "@/lib/notes-store";
+import { dedupeBy, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
+
 
 type Mode = "summary" | "details" | "flashcards" | "quiz";
 type View = Mode | "chat";
@@ -77,15 +79,24 @@ function NoteDetailPage() {
   const [pending, setPending] = useState<Mode | null>(null);
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
+  const [gen, setGen] = useState(0);
+
 
   async function run(mode: Mode) {
     if (pending || !note) return;
     setOpen(false);
     setError(null);
     setPending(mode);
+    const memoryKey = `${note.id}:${mode}`;
+    const varied = mode === "quiz" || mode === "flashcards";
     try {
       const res = (await generateFromNote({
-        data: { mode, text: note.content, apiKey: getUserApiKey() },
+        data: {
+          mode,
+          text: note.content,
+          avoid: varied ? loadAsked(memoryKey) : [],
+          apiKey: getUserApiKey(),
+        },
       })) as
         | { ok: true; text: string }
         | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
@@ -93,7 +104,26 @@ function NoteDetailPage() {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
       }
-      noteActions.setOutput(note.id, mode, res.text);
+
+      let text = res.text;
+      if (mode === "quiz") {
+        const asked = loadAsked(memoryKey);
+        const all = parseQuiz(res.text);
+        const fresh = dedupeBy(all, (q) => `${q.question} ${q.options.join(" ")}`, asked);
+        const kept = fresh.length ? fresh : all; // never leave the student with nothing
+        rememberAsked(memoryKey, kept.map((q) => q.question));
+        text = JSON.stringify(kept);
+      } else if (mode === "flashcards") {
+        const asked = loadAsked(memoryKey);
+        const all = parseFlashcards(res.text);
+        const fresh = dedupeBy(all, (c) => c.q, asked);
+        const kept = fresh.length ? fresh : all;
+        rememberAsked(memoryKey, kept.map((c) => c.q));
+        text = JSON.stringify(kept);
+      }
+
+      noteActions.setOutput(note.id, mode, text);
+      setGen((g) => g + 1);
       setView(mode);
     } catch (e) {
       console.error(e);
@@ -105,6 +135,7 @@ function NoteDetailPage() {
       setPending(null);
     }
   }
+
 
   if (!note) {
     return (
@@ -184,9 +215,15 @@ function NoteDetailPage() {
             </Button>
           </div>
           {view === "flashcards" ? (
-            <FlashcardsView cards={parseFlashcards(shown)} />
+            <FlashcardsView key={`f${gen}`} cards={parseFlashcards(shown)} />
           ) : view === "quiz" ? (
-            <QuizView questions={parseQuiz(shown)} />
+            <QuizView
+              key={`q${gen}`}
+              questions={parseQuiz(shown)}
+              regenerating={pending === "quiz"}
+              onRegenerate={() => run("quiz")}
+            />
+
           ) : (
             (() => {
               const { chart, markdown } = extractChart(shown);

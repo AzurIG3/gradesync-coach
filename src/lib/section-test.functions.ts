@@ -25,11 +25,16 @@ export const generateSectionTest = createServerFn({ method: "POST" })
       })
       .filter((n) => n.title && n.content.trim());
     if (!notes.length) throw new Error("Selected notes have no readable content");
-    return { notes, apiKey: str(o.apiKey, 200).trim() };
+    const avoid = Array.isArray(o.avoid)
+      ? o.avoid.map((a) => str(a, 300).trim()).filter(Boolean).slice(-40)
+      : [];
+    return { notes, avoid, apiKey: str(o.apiKey, 200).trim() };
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
+    const { buildAvoidBlock } = await import("./notes.server");
     const key = resolveApiKey(data.apiKey);
+
 
     // Scale question count with total content length: ~1 question per ~1500 chars, clamped 8-15.
     // Fewer questions = faster generation.
@@ -69,7 +74,7 @@ RULES:
 Shape:
 [{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]
 
-[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]`;
+[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]${buildAvoidBlock(data.avoid)}`;
 
     // The "-lite-latest" alias always points at the current fast model, so this
     // never breaks when Google retires a dated model id (which returns 404).

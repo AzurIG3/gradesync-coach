@@ -42,6 +42,18 @@ export const MODE_PROMPTS: Record<GenMode, string> = {
     VARIETY_HINT,
 };
 
+/**
+ * Builds an explicit "already asked — do not repeat" block from previously
+ * generated questions so the model has to find fresh angles.
+ */
+export function buildAvoidBlock(avoid: string[]): string {
+  const list = avoid.filter(Boolean).slice(-40);
+  if (!list.length) return "";
+  return `\n\nALREADY ASKED — DO NOT REPEAT OR PARAPHRASE ANY OF THESE. Also avoid reusing their answer options or testing the same fact from a slightly different angle. Choose genuinely new questions from parts of the notes these do not cover:\n${list
+    .map((q, i) => `${i + 1}. ${q}`)
+    .join("\n")}`;
+}
+
 
 export const EXTRACT_PROMPT =
   "Extract ALL readable text content from this file exactly as it appears. Keep headings, lists and line breaks. Do not summarize, do not add any commentary. If the file has no readable text, reply with exactly: NO_TEXT_FOUND";

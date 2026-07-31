@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle } from "lucide-react";
+import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/lib/notes-parse";
@@ -28,7 +28,16 @@ function computeBreakdown(
     .sort((a, b) => b.pct - a.pct);
 }
 
-export function QuizView({ questions }: { questions: QuizQuestion[] }) {
+export function QuizView({
+  questions,
+  onRegenerate,
+  regenerating,
+}: {
+  questions: QuizQuestion[];
+  onRegenerate?: () => void;
+  regenerating?: boolean;
+}) {
+
   const [i, setI] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
@@ -118,6 +127,19 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
           <Button variant="outline" size="lg" className="w-full rounded-xl" onClick={reset}>
             <RotateCw size={16} /> Retake quiz
           </Button>
+          {onRegenerate && (
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full rounded-xl"
+              disabled={regenerating}
+              onClick={onRegenerate}
+            >
+              <Sparkles size={16} />
+              {regenerating ? "Generating new questions…" : "Generate New Set"}
+            </Button>
+          )}
+
         </div>
       </div>
     );
@@ -216,13 +238,27 @@ export function QuizView({ questions }: { questions: QuizQuestion[] }) {
         <span className="text-xs font-semibold text-muted-foreground">
           Question {i + 1} of {questions.length}
         </span>
-        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${((i + 1) / questions.length) * 100}%` }}
-          />
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${((i + 1) / questions.length) * 100}%` }}
+            />
+          </div>
+          {onRegenerate && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              disabled={regenerating}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-[11px] font-bold text-primary transition hover:bg-muted disabled:opacity-60"
+            >
+              <Sparkles size={12} />
+              {regenerating ? "…" : "New set"}
+            </button>
+          )}
         </div>
       </div>
+
 
       {q.topic && (
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
