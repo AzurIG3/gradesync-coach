@@ -28,7 +28,16 @@ function computeBreakdown(
     .sort((a, b) => b.pct - a.pct);
 }
 
-export function QuizView({ questions }: { questions: QuizQuestion[] }) {
+export function QuizView({
+  questions,
+  onRegenerate,
+  regenerating,
+}: {
+  questions: QuizQuestion[];
+  onRegenerate?: () => void;
+  regenerating?: boolean;
+}) {
+
   const [i, setI] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);
