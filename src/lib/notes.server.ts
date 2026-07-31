@@ -21,6 +21,10 @@ STRUCTURE the reply with proper Markdown heading levels so it's easy to scan:
 - Do not put everything under one heading and do not skip levels (no \`###\` without a parent \`##\`).
 - Do NOT use a top-level \`#\` heading — the note already has a title.`;
 
+const VARIETY_HINT = `
+
+VARIETY IS REQUIRED: Generate a FRESH, VARIED set each time. Deliberately pick different details, angles, phrasings and depth than the most obvious ones. Spread your picks across the WHOLE of the notes — beginning, middle and end — not just the first or most prominent facts. Mix question types (definition, application, cause/effect, comparison, numeric/example based). Assume this content has been used before: avoid repeating the same questions or the same wording.`;
+
 export const MODE_PROMPTS: Record<GenMode, string> = {
   summary:
     "Summarize the following study notes for a Pakistani Matric (Grade 9-10) student. Use simple words and short sentences. Reply in Markdown: start with a 3-6 sentence overview paragraph, then use `##` / `###` headings to group the main ideas, and put a short bulleted list under each. Use **bold** for key terms. If the notes contain a table of data, you may include a small Markdown table under the relevant heading." +
