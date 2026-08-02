@@ -11,7 +11,7 @@ const en = {
   navProgress: "Progress",
   navNotes: "Notes",
   // header
-  hello: "Hello 👋",
+  hello: "Study Dashboard",
   // home
   nextExam: "Next exam",
   daysToGo: "days to go",
@@ -129,7 +129,7 @@ const ur: Partial<Record<Key, string>> = {
   navSchedule: "شیڈول",
   navProgress: "پیش رفت",
   navNotes: "نوٹس",
-  hello: "السلام علیکم 👋",
+  hello: "مطالعہ ڈیش بورڈ",
   nextExam: "اگلا امتحان",
   daysToGo: "دن باقی",
   noExamsYet: "ابھی کوئی امتحان درج نہیں۔",
