@@ -174,6 +174,11 @@ function NotesPage() {
         onChange={(e) => onPick(e.target.files?.[0])}
       />
 
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+        Upload a new note
+      </h2>
+
+
       {subjects.length > 0 ? (
         <div className="mb-3">
           <label
