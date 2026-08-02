@@ -91,3 +91,40 @@ export function strongTopics(scope: string, limit = 6): string[] {
     .slice(-limit)
     .map((s) => s.topic);
 }
+
+/** Every scope that has recorded answers. */
+export function masteryScopes(): string[] {
+  return Object.keys(read());
+}
+
+/**
+ * Every topic the student has answered, merged across all quizzes and tests,
+ * weakest first. Used by the Mastery screen.
+ */
+export function allMasteryStats(): MasteryStat[] {
+  const merged: MasteryMap = {};
+  const store = read();
+  for (const map of Object.values(store)) {
+    for (const [topic, row] of Object.entries(map ?? {})) {
+      const prev = merged[topic] ?? { correct: 0, total: 0 };
+      merged[topic] = {
+        correct: prev.correct + (row?.correct ?? 0),
+        total: prev.total + (row?.total ?? 0),
+      };
+    }
+  }
+  return Object.entries(merged)
+    .map(([topic, r]) => ({
+      topic,
+      correct: r.correct,
+      total: r.total,
+      pct: r.total ? r.correct / r.total : 0,
+    }))
+    .sort((a, b) => a.pct - b.pct || b.total - a.total);
+}
+
+/** Wipes all recorded mastery (used by the "Reset" action on the Mastery screen). */
+export function clearAllMastery(): void {
+  write({});
+}
+

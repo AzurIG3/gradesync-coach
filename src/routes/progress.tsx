@@ -3,7 +3,9 @@ import { AppShell } from "@/components/AppShell";
 import { subjectProgress, useStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { MasteryPanel } from "@/components/notes/MasteryPanel";
 import { useT } from "@/lib/i18n";
+
 
 export const Route = createFileRoute("/progress")({
   head: () => ({
@@ -98,6 +100,9 @@ function ProgressPage() {
           })}
         </ul>
       )}
+
+      <MasteryPanel />
     </AppShell>
+
   );
 }

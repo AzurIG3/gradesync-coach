@@ -11,12 +11,18 @@ import {
   CheckSquare,
   Square,
   X,
+  ArrowDownAZ,
+  CalendarClock,
+  HardDrive,
+  ChevronDown,
+  BookOpen,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
 import { extractTextFromFile } from "@/lib/extract-text";
-import { useNotes, noteActions } from "@/lib/notes-store";
+import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
+import { useStore } from "@/lib/store";
 import { RenameIconButton } from "@/components/notes/EditableTitle";
 import { cn } from "@/lib/utils";
 
@@ -41,13 +47,28 @@ export const Route = createFileRoute("/notes/")({
   }),
 });
 
+type SortKey = "az" | "date" | "size";
+
+const SORTS: { id: SortKey; label: string; icon: typeof ArrowDownAZ }[] = [
+  { id: "date", label: "Date added", icon: CalendarClock },
+  { id: "az", label: "A–Z", icon: ArrowDownAZ },
+  { id: "size", label: "File size", icon: HardDrive },
+];
+
+const NO_SUBJECT = "__none__";
+
 function NotesPage() {
   const notes = useNotes((n) => n);
+  const subjects = useStore((s) => s.subjects);
   const router = useRouter();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
+  const [uploadSubject, setUploadSubject] = useState("");
+
+  const [sort, setSort] = useState<SortKey>("date");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const [selectMode, setSelectMode] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -56,6 +77,27 @@ function NotesPage() {
     () => notes.length > 0 && notes.every((n) => picked.has(n.id)),
     [notes, picked],
   );
+
+  const sorted = useMemo(() => {
+    const list = [...notes];
+    if (sort === "az") list.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sort === "size") list.sort((a, b) => noteSize(b) - noteSize(a));
+    else list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return list;
+  }, [notes, sort]);
+
+  /** Notes grouped by subject, in the order subjects were created, then "No subject". */
+  const groups = useMemo(() => {
+    const out: { key: string; name: string; color?: string; notes: Note[] }[] = [];
+    for (const sub of subjects) {
+      const items = sorted.filter((n) => n.subjectId === sub.id);
+      if (items.length) out.push({ key: sub.id, name: sub.name, color: sub.color, notes: items });
+    }
+    const known = new Set(subjects.map((s) => s.id));
+    const rest = sorted.filter((n) => !n.subjectId || !known.has(n.subjectId));
+    if (rest.length) out.push({ key: NO_SUBJECT, name: "No subject", notes: rest });
+    return out;
+  }, [sorted, subjects]);
 
   function togglePick(id: string) {
     setPicked((prev) => {
@@ -76,10 +118,19 @@ function NotesPage() {
     setPicked(new Set());
   }
 
+  function toggleGroup(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   function startTest() {
     if (picked.size < 2) return;
     // Preserve the on-screen order so the "Testing you on" list reads naturally.
-    const ordered = notes.filter((n) => picked.has(n.id)).map((n) => n.id);
+    const ordered = sorted.filter((n) => picked.has(n.id)).map((n) => n.id);
     navigate({ to: "/notes/test", search: { ids: ordered.join(",") } });
   }
 
@@ -97,7 +148,10 @@ function NotesPage() {
         setError({ message: "We couldn't find any readable text in that file.", keyIssue: false });
         return;
       }
-      const id = noteActions.add(file.name.replace(/\.[^.]+$/, ""), res.text, file.name);
+      const id = noteActions.add(file.name.replace(/\.[^.]+$/, ""), res.text, file.name, {
+        subjectId: uploadSubject,
+        fileSize: file.size,
+      });
       router.navigate({ to: "/notes/$noteId", params: { noteId: id } });
     } catch (e) {
       console.error(e);
@@ -117,6 +171,38 @@ function NotesPage() {
         className="hidden"
         onChange={(e) => onPick(e.target.files?.[0])}
       />
+
+      {subjects.length > 0 ? (
+        <div className="mb-3">
+          <label
+            htmlFor="upload-subject"
+            className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground"
+          >
+            <BookOpen size={13} /> Subject for this upload
+          </label>
+          <select
+            id="upload-subject"
+            value={uploadSubject}
+            onChange={(e) => setUploadSubject(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold outline-none focus:border-primary"
+          >
+            <option value="">No subject</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <p className="mb-3 rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
+          Add subjects on the{" "}
+          <Link to="/subjects" className="font-semibold text-primary underline">
+            Subjects
+          </Link>{" "}
+          page to file your notes under them.
+        </p>
+      )}
 
       <Button
         size="lg"
@@ -210,7 +296,33 @@ function NotesPage() {
         </div>
       )}
 
-      <div className="mt-6 space-y-3 pb-4">
+      {notes.length > 1 && (
+        <div className="mt-6 flex items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            Sort
+          </span>
+          <div className="flex flex-1 gap-1 rounded-full bg-muted p-1">
+            {SORTS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSort(id)}
+                aria-pressed={sort === id}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-[11px] font-bold transition",
+                  sort === id
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon size={12} /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 space-y-4 pb-4">
         {notes.length === 0 && !busy && (
           <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -223,59 +335,91 @@ function NotesPage() {
           </div>
         )}
 
-        {notes.map((n) => {
-          const isPicked = picked.has(n.id);
-          if (selectMode) {
-            return (
+        {groups.map((group) => {
+          const isOpen = !collapsed.has(group.key);
+          return (
+            <section key={group.key}>
               <button
-                key={n.id}
                 type="button"
-                onClick={() => togglePick(n.id)}
-                aria-pressed={isPicked}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl border-2 p-4 text-left transition",
-                  isPicked
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card hover:border-primary/40",
-                )}
+                onClick={() => toggleGroup(group.key)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-2 rounded-xl px-1 py-2 text-left"
               >
                 <span
-                  className={cn(
-                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
-                    isPicked ? "text-primary" : "text-muted-foreground",
-                  )}
-                >
-                  {isPicked ? <CheckSquare size={22} /> : <Square size={22} />}
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: group.color ?? "var(--color-muted-foreground)" }}
+                />
+                <span className="min-w-0 flex-1 truncate text-sm font-bold">{group.name}</span>
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+                  {group.notes.length}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-bold">{n.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{n.fileName}</p>
+                <ChevronDown
+                  size={16}
+                  className={cn(
+                    "shrink-0 text-muted-foreground transition-transform",
+                    !isOpen && "-rotate-90",
+                  )}
+                />
+              </button>
+
+              {isOpen && (
+                <div className="space-y-3">
+                  {group.notes.map((n) => {
+                    const isPicked = picked.has(n.id);
+                    if (selectMode) {
+                      return (
+                        <button
+                          key={n.id}
+                          type="button"
+                          onClick={() => togglePick(n.id)}
+                          aria-pressed={isPicked}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-2xl border-2 p-4 text-left transition",
+                            isPicked
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-card hover:border-primary/40",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
+                              isPicked ? "text-primary" : "text-muted-foreground",
+                            )}
+                          >
+                            {isPicked ? <CheckSquare size={22} /> : <Square size={22} />}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-base font-bold">{n.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">{n.fileName}</p>
+                          </div>
+                        </button>
+                      );
+                    }
+                    return (
+                      <div
+                        key={n.id}
+                        className="flex items-center gap-2 rounded-2xl border border-border bg-card p-4"
+                      >
+                        <Link to="/notes/$noteId" params={{ noteId: n.id }} className="min-w-0 flex-1">
+                          <p className="truncate text-base font-bold">{n.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {n.fileName} · {formatSize(noteSize(n))}
+                          </p>
+                        </Link>
+                        <RenameIconButton value={n.title} onSave={(t) => noteActions.rename(n.id, t)} />
+                        <button
+                          aria-label="Delete note"
+                          onClick={() => noteActions.remove(n.id)}
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              </button>
-            );
-          }
-          return (
-            <div
-              key={n.id}
-              className="flex items-center gap-2 rounded-2xl border border-border bg-card p-4"
-            >
-              <Link
-                to="/notes/$noteId"
-                params={{ noteId: n.id }}
-                className="min-w-0 flex-1"
-              >
-                <p className="truncate text-base font-bold">{n.title}</p>
-                <p className="truncate text-xs text-muted-foreground">{n.fileName}</p>
-              </Link>
-              <RenameIconButton value={n.title} onSave={(t) => noteActions.rename(n.id, t)} />
-              <button
-                aria-label="Delete note"
-                onClick={() => noteActions.remove(n.id)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
+              )}
+            </section>
           );
         })}
       </div>

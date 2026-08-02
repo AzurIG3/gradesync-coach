@@ -25,7 +25,11 @@ import { extractChart, parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
 import { useNotes, noteActions } from "@/lib/notes-store";
-import { dedupeBy, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
+import { dedupeBy, dedupeQuestions, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
+import { strongTopics, weakTopics } from "@/lib/mastery";
+import type { Difficulty } from "@/components/notes/QuizView";
+import { cn } from "@/lib/utils";
+
 
 
 type Mode = "summary" | "details" | "flashcards" | "quiz";
@@ -46,10 +50,12 @@ const VIEW_LABEL: Record<View, string> = {
   chat: "Ask about this note",
 };
 
-/** Heuristic: does the extracted content include a Markdown table? */
-function hasMarkdownTable(text: string): boolean {
-  return /(^|\n)\s*\|.+\|\s*\n\s*\|[\s:-]+\|/.test(text);
-}
+const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+  { id: "easy", label: "Easy" },
+  { id: "medium", label: "Medium" },
+  { id: "hard", label: "Hard" },
+];
+
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: NoteDetailPage,
@@ -80,9 +86,11 @@ function NoteDetailPage() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [gen, setGen] = useState(0);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
 
+  const masteryScope = `note:${noteId}`;
 
-  async function run(mode: Mode) {
+  async function run(mode: Mode, diff: Difficulty = difficulty) {
     if (pending || !note) return;
     setOpen(false);
     setError(null);
@@ -95,6 +103,9 @@ function NoteDetailPage() {
           mode,
           text: note.content,
           avoid: varied ? loadAsked(memoryKey) : [],
+          weak: varied ? weakTopics(masteryScope) : [],
+          strong: varied ? strongTopics(masteryScope) : [],
+          difficulty: diff,
           apiKey: getUserApiKey(),
         },
       })) as
@@ -109,8 +120,9 @@ function NoteDetailPage() {
       if (mode === "quiz") {
         const asked = loadAsked(memoryKey);
         const all = parseQuiz(res.text);
-        const fresh = dedupeBy(all, (q) => `${q.question} ${q.options.join(" ")}`, asked);
-        const kept = fresh.length ? fresh : all; // never leave the student with nothing
+        // Removes repeats against past sets AND inside this set.
+        const fresh = dedupeQuestions(all, asked);
+        const kept = fresh.length ? fresh : dedupeQuestions(all); // never leave the student with nothing
         rememberAsked(memoryKey, kept.map((q) => q.question));
         text = JSON.stringify(kept);
       } else if (mode === "flashcards") {
@@ -121,6 +133,7 @@ function NoteDetailPage() {
         rememberAsked(memoryKey, kept.map((c) => c.q));
         text = JSON.stringify(kept);
       }
+
 
       noteActions.setOutput(note.id, mode, text);
       setGen((g) => g + 1);
@@ -149,7 +162,7 @@ function NoteDetailPage() {
 
   const shown = view && view !== "chat" ? note.outputs[view] : undefined;
   const viewLabel = view ? VIEW_LABEL[view] : "";
-  const originalHasTable = hasMarkdownTable(note.content);
+  
 
   return (
     <AppShell
@@ -222,6 +235,12 @@ function NoteDetailPage() {
               questions={parseQuiz(shown)}
               regenerating={pending === "quiz"}
               onRegenerate={() => run("quiz")}
+              difficulty={difficulty}
+              onDifficultyChange={(d) => {
+                setDifficulty(d);
+                void run("quiz", d);
+              }}
+              masteryScope={masteryScope}
             />
 
           ) : (
@@ -239,13 +258,10 @@ function NoteDetailPage() {
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="mb-3 text-base font-bold">Cleaned notes</h2>
-          {originalHasTable ? (
-            <Markdown>{note.content}</Markdown>
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">{note.content}</p>
-          )}
+          <Markdown>{note.content}</Markdown>
         </section>
       )}
+
 
       {pending && (
         <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
@@ -267,6 +283,31 @@ function NoteDetailPage() {
           <SheetHeader className="text-left">
             <SheetTitle>What should I make from this note?</SheetTitle>
           </SheetHeader>
+
+          <div className="mt-4">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Difficulty (for Quiz Me &amp; Flashcards)
+            </p>
+            <div className="flex gap-1 rounded-full bg-muted p-1">
+              {DIFFICULTIES.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setDifficulty(d.id)}
+                  aria-pressed={difficulty === d.id}
+                  className={cn(
+                    "flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition",
+                    difficulty === d.id
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-4 grid grid-cols-2 gap-3">
             {OPTIONS.map(({ mode, label, icon: Icon }) => (
               <Button
