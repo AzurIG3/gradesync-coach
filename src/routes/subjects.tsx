@@ -25,7 +25,9 @@ export const Route = createFileRoute("/subjects")({
       { property: "og:description", content: "Add your subjects, set exam dates, and track topics." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/subjects" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/subjects" }],
   }),
   component: SubjectsPage,
 });

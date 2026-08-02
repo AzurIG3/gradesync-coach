@@ -16,7 +16,9 @@ export const Route = createFileRoute("/progress")({
       { property: "og:description", content: "See how much of each subject you have completed." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/progress" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/progress" }],
   }),
   component: ProgressPage,
 });

@@ -37,7 +37,9 @@ export const Route = createFileRoute("/settings")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/settings" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/settings" }],
   }),
 });
 
