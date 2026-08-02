@@ -25,7 +25,9 @@ export const Route = createFileRoute("/subjects")({
       { property: "og:description", content: "Add your subjects, set exam dates, and track topics." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/subjects" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/subjects" }],
   }),
   component: SubjectsPage,
 });
@@ -104,7 +106,7 @@ function AddSubjectButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="h-12 w-12 rounded-full p-0 shadow-md">
+        <Button size="lg" aria-label="Add subject" className="h-12 w-12 rounded-full p-0 shadow-md">
           <Plus size={24} />
         </Button>
       </DialogTrigger>

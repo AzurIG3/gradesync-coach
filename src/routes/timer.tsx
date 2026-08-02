@@ -30,7 +30,9 @@ export const Route = createFileRoute("/timer")({
       { property: "og:description", content: "Pomodoro-style focus timer to power your Matric study sessions." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/timer" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/timer" }],
   }),
   component: TimerPage,
 });

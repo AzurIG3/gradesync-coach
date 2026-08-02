@@ -17,7 +17,9 @@ export const Route = createFileRoute("/schedule")({
       { property: "og:description", content: "Auto-generated daily study plan built around your exam dates." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/schedule" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/schedule" }],
   }),
   component: SchedulePage,
 });

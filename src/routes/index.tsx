@@ -10,13 +10,11 @@ import { useT } from "@/lib/i18n";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sophia Odyssey" },
-      { name: "description", content: "AI-powered study planner for Matric students. Plan schedules, track progress, access free textbooks, and get AI notes, flashcards & quizzes." },
-      { property: "og:title", content: "Sophia Odyssey" },
-      { property: "og:description", content: "AI-powered study planner for Matric students. Plan schedules, track progress, access free textbooks, and get AI notes, flashcards & quizzes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/" }],
   }),
   component: Home,
 });

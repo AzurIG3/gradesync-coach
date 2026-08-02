@@ -30,7 +30,9 @@ export const Route = createFileRoute("/assistant")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://sophia-odyssey.lovable.app/assistant" },
     ],
+    links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/assistant" }],
   }),
 });
 
