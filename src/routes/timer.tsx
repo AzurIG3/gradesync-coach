@@ -6,6 +6,8 @@ import { Play, Pause, RotateCcw, BellOff, Volume2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import {
   ALARM_OPTIONS,
+  loadCustomAlarm,
+
   getAlarmSound,
   playAlarm,
   primeAudio,
