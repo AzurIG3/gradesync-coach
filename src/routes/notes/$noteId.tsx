@@ -233,6 +233,12 @@ function NoteDetailPage() {
               questions={parseQuiz(shown)}
               regenerating={pending === "quiz"}
               onRegenerate={() => run("quiz")}
+              difficulty={difficulty}
+              onDifficultyChange={(d) => {
+                setDifficulty(d);
+                void run("quiz", d);
+              }}
+              masteryScope={masteryScope}
             />
 
           ) : (
@@ -250,13 +256,10 @@ function NoteDetailPage() {
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="mb-3 text-base font-bold">Cleaned notes</h2>
-          {originalHasTable ? (
-            <Markdown>{note.content}</Markdown>
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">{note.content}</p>
-          )}
+          <Markdown>{note.content}</Markdown>
         </section>
       )}
+
 
       {pending && (
         <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
