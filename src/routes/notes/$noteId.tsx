@@ -162,7 +162,7 @@ function NoteDetailPage() {
 
   const shown = view && view !== "chat" ? note.outputs[view] : undefined;
   const viewLabel = view ? VIEW_LABEL[view] : "";
-  const originalHasTable = hasMarkdownTable(note.content);
+  
 
   return (
     <AppShell
