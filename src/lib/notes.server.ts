@@ -25,22 +25,29 @@ const VARIETY_HINT = `
 
 VARIETY IS REQUIRED: Generate a FRESH, VARIED set each time. Deliberately pick different details, angles, phrasings and depth than the most obvious ones. Spread your picks across the WHOLE of the notes — beginning, middle and end — not just the first or most prominent facts. Mix question types (definition, application, cause/effect, comparison, numeric/example based). Assume this content has been used before: avoid repeating the same questions or the same wording.`;
 
-export const MODE_PROMPTS: Record<GenMode, string> = {
-  summary:
-    "Summarize the following study notes for a Pakistani Matric (Grade 9-10) student. Use simple words and short sentences. Reply in Markdown: start with a 3-6 sentence overview paragraph, then use `##` / `###` headings to group the main ideas, and put a short bulleted list under each. Use **bold** for key terms. If the notes contain a table of data, you may include a small Markdown table under the relevant heading." +
-    HEADING_HINT +
-    CHART_HINT,
-  details:
-    "Pull out the KEY DETAILS a Matric (Grade 9-10) student must remember from the following study notes: important definitions, formulas, dates, names and facts. Reply in Markdown, grouped under `##` / `###` headings by topic, with short bullet points under each heading. Use **bold** for the label and plain text for the explanation. Keep the language simple. If the notes contain tabular data, you may include a small Markdown table." +
-    HEADING_HINT +
-    CHART_HINT,
-  flashcards:
-    'Create 8-12 flashcards from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"q":"short question","a":"short simple answer (1-2 sentences)"}]. Do not include any text before or after the JSON.' +
-    VARIETY_HINT,
-  quiz:
-    'Create a 5-question multiple-choice practice quiz from the following study notes for a Matric (Grade 9-10) student. Reply with ONLY a valid JSON array, no prose, no code fences. Shape: [{"question":"...","options":["A option","B option","C option","D option"],"answerIndex":0,"explanation":"one short sentence"}]. Exactly 4 options per question. answerIndex is 0-3. Keep the language simple.' +
-    VARIETY_HINT,
-};
+/** Guarantees a single generated set never repeats itself internally. */
+export const WITHIN_SET_HINT = `
+
+NO REPEATS INSIDE THIS SET: Every question in this reply must be about a DIFFERENT fact. No two questions may share the same or a nearly identical stem/wording, and no two questions may have the same or nearly identical set of answer options. Before you finish, re-read your own list and replace any question that overlaps another one.`;
+
+export type Difficulty = "easy" | "medium" | "hard";
+
+/** Tunes how deep the generated questions go. */
+export function difficultyHint(d: Difficulty): string {
+  if (d === "easy") {
+    return `
+
+DIFFICULTY — EASY: Ask straightforward recall questions about clearly stated facts, definitions and names. Keep the wording very short and simple. Make the wrong options obviously different from the right one.`;
+  }
+  if (d === "hard") {
+    return `
+
+DIFFICULTY — HARD: Ask deeper questions that need understanding, not just recall: application to a new example, cause and effect, comparing two ideas, multi-step reasoning or working out a number. Make the wrong options plausible and close to the right one, so guessing is hard. Still keep the language simple.`;
+  }
+  return `
+
+DIFFICULTY — MEDIUM: Mix straightforward recall with some questions that need real understanding or applying an idea. Keep distractors sensible but not tricky.`;
+}
 
 /**
  * Builds an explicit "already asked — do not repeat" block from previously
@@ -53,6 +60,29 @@ export function buildAvoidBlock(avoid: string[]): string {
     .map((q, i) => `${i + 1}. ${q}`)
     .join("\n")}`;
 }
+
+/**
+ * Mastery-driven focus: topics the student keeps getting wrong get more
+ * questions, topics they've mastered get fewer.
+ */
+export function buildFocusBlock(weak: string[], strong: string[]): string {
+  const w = weak.filter(Boolean).slice(0, 8);
+  const s = strong.filter(Boolean).slice(0, 8);
+  if (!w.length && !s.length) return "";
+  let out = "\n\nPERSONALISED FOCUS (based on this student's past results):";
+  if (w.length) {
+    out += `\n- The student is WEAK on these topics — spend MORE questions here and probe them from new angles: ${w.join(
+      "; ",
+    )}.`;
+  }
+  if (s.length) {
+    out += `\n- The student has already MASTERED these — include at most one question each, and make it a deeper one: ${s.join(
+      "; ",
+    )}.`;
+  }
+  return out;
+}
+
 
 
 export const EXTRACT_PROMPT =
