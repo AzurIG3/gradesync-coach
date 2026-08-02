@@ -1,16 +1,33 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, KeyRound, Loader2, ClipboardList } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  KeyRound,
+  Loader2,
+  ClipboardList,
+  GraduationCap,
+  Sparkles,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { QuizView } from "@/components/notes/QuizView";
+import { QuizView, type Difficulty } from "@/components/notes/QuizView";
+import { BoardExamView } from "@/components/notes/BoardExamView";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateSectionTest } from "@/lib/section-test.functions";
 import { useNotes, type Note } from "@/lib/notes-store";
-import { parseQuiz, type QuizQuestion } from "@/lib/notes-parse";
-import { dedupeBy, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
+import { parseBoardExam, parseQuiz, type BoardExam, type QuizQuestion } from "@/lib/notes-parse";
+import { dedupeQuestions, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
+import { strongTopics, weakTopics } from "@/lib/mastery";
+import { cn } from "@/lib/utils";
 
 type Search = { ids?: string };
+
+const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+  { id: "easy", label: "Easy" },
+  { id: "medium", label: "Medium" },
+  { id: "hard", label: "Hard" },
+];
 
 export const Route = createFileRoute("/notes/test")({
   component: SectionTestPage,
@@ -23,7 +40,7 @@ export const Route = createFileRoute("/notes/test")({
       {
         name: "description",
         content:
-          "Combine several of your notes into one longer practice test with a per-note breakdown of what to revise.",
+          "Combine several of your notes into one longer practice test — quick MCQs or a full board exam style paper.",
       },
       { property: "og:title", content: "Full Section Test — Matric Study Planner" },
       {
@@ -50,13 +67,16 @@ function SectionTestPage() {
     [idList, allNotes],
   );
 
-
-
+  const [format, setFormat] = useState<"mcq" | "board">("mcq");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
+  const [exam, setExam] = useState<BoardExam | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+
+  const masteryScope = `test:${idKey}`;
 
   // Elapsed-time ticker so the user sees the app is working, not frozen.
   useEffect(() => {
@@ -66,60 +86,87 @@ function SectionTestPage() {
     return () => clearInterval(id);
   }, [loading]);
 
-  useEffect(() => {
-    if (!notes.length) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      setQuestions(null);
-      try {
-        const res = (await generateSectionTest({
-          data: {
-            notes: notes.map((n) => ({ title: n.title, content: n.content })),
-            avoid: loadAsked(`test:${idKey}`),
-            apiKey: getUserApiKey(),
-          },
-        })) as
-          | { ok: true; text: string }
-          | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
-        if (cancelled) return;
-        if (!res.ok) {
-          setError({ message: res.message, keyIssue: res.kind !== "error" });
-          return;
-        }
-        const all = parseQuiz(res.text);
-        const fresh = dedupeBy(
-          all,
-          (q) => `${q.question} ${q.options.join(" ")}`,
-          loadAsked(`test:${idKey}`),
-        );
-        const parsed = fresh.length ? fresh : all;
-        if (parsed.length) rememberAsked(`test:${idKey}`, parsed.map((q) => q.question));
-        if (!parsed.length) {
-          setError({
-            message: "We couldn't build a test from these notes. Try selecting different ones.",
-            keyIssue: false,
-          });
-          return;
-        }
-        setQuestions(parsed);
-      } catch (e) {
-        console.error(e);
-        if (!cancelled) {
-          setError({
-            message: "Sorry, we couldn't build the test right now. Please try again.",
-            keyIssue: false,
-          });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+  async function generate() {
+    if (loading || !notes.length) return;
+    setLoading(true);
+    setError(null);
+    setQuestions(null);
+    setExam(null);
+    const memoryKey = format === "board" ? `board:${idKey}` : `test:${idKey}`;
+    try {
+      const res = (await generateSectionTest({
+        data: {
+          notes: notes.map((n) => ({ title: n.title, content: n.content })),
+          avoid: loadAsked(memoryKey),
+          weak: weakTopics(masteryScope),
+          strong: strongTopics(masteryScope),
+          difficulty,
+          format,
+          apiKey: getUserApiKey(),
+        },
+      })) as
+        | { ok: true; text: string }
+        | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+      if (!res.ok) {
+        setError({ message: res.message, keyIssue: res.kind !== "error" });
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt, notes, idKey]);
+
+      if (format === "board") {
+        const paper = parseBoardExam(res.text);
+        if (!paper) {
+          setError({
+            message: "We couldn't build a board paper from these notes. Please try again.",
+            keyIssue: false,
+          });
+          return;
+        }
+        // De-duplicate the MCQ section within itself and across past papers.
+        const cleaned: BoardExam = {
+          ...paper,
+          sections: paper.sections.map((s) => ({
+            ...s,
+            questions: (() => {
+              const mcqs = s.questions.filter((q) => q.type === "mcq");
+              if (mcqs.length < 2) return s.questions;
+              const kept = dedupeQuestions(mcqs, loadAsked(memoryKey));
+              const keep = new Set((kept.length ? kept : mcqs).map((q) => q.question));
+              return s.questions.filter((q) => q.type !== "mcq" || keep.has(q.question));
+            })(),
+          })),
+        };
+        rememberAsked(
+          memoryKey,
+          cleaned.sections.flatMap((s) => s.questions.map((q) => q.question)),
+        );
+        setExam(cleaned);
+        setAttempt((a) => a + 1);
+        return;
+      }
+
+      const all = parseQuiz(res.text);
+      const fresh = dedupeQuestions(all, loadAsked(memoryKey));
+      const parsed = fresh.length ? fresh : dedupeQuestions(all);
+      if (!parsed.length) {
+        setError({
+          message: "We couldn't build a test from these notes. Try selecting different ones.",
+          keyIssue: false,
+        });
+        return;
+      }
+      rememberAsked(memoryKey, parsed.map((q) => q.question));
+      setQuestions(parsed);
+      setAttempt((a) => a + 1);
+    } catch (e) {
+      console.error(e);
+      setError({
+        message: "Sorry, we couldn't build the test right now. Please try again.",
+        keyIssue: false,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (!idList.length || !notes.length) {
     return (
@@ -135,6 +182,7 @@ function SectionTestPage() {
   }
 
   const totalChars = notes.reduce((s, n) => s + n.content.length, 0);
+  const started = Boolean(questions || exam);
   const progressStage =
     elapsed < 6
       ? "Reading your notes…"
@@ -146,7 +194,7 @@ function SectionTestPage() {
 
   return (
     <AppShell
-      title="Full Section Test"
+      title={format === "board" ? "Board Exam Paper" : "Full Section Test"}
       subtitle={`${notes.length} notes combined`}
       hideAssistantFab
     >
@@ -179,13 +227,77 @@ function SectionTestPage() {
         </ul>
       </div>
 
+      {!started && !loading && (
+        <div className="mb-4 rounded-2xl border border-border bg-card p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-bold">
+            <GraduationCap size={16} className="text-primary" /> Board Exam mode
+          </p>
+          <div className="mb-4 flex gap-1 rounded-full bg-muted p-1">
+            {(
+              [
+                { id: "mcq" as const, label: "Quick MCQs" },
+                { id: "board" as const, label: "Board paper" },
+              ]
+            ).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setFormat(m.id)}
+                aria-pressed={format === m.id}
+                className={cn(
+                  "flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition",
+                  format === m.id
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            {format === "board"
+              ? "A real board-style paper: Section A MCQs, Section B short questions and Section C long questions, with marks and a time limit."
+              : "A single set of multiple-choice questions spread evenly across your notes."}
+          </p>
+
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            Difficulty
+          </p>
+          <div className="mb-4 flex gap-1 rounded-full bg-muted p-1">
+            {DIFFICULTIES.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => setDifficulty(d.id)}
+                aria-pressed={difficulty === d.id}
+                className={cn(
+                  "flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition",
+                  difficulty === d.id
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+
+          <Button size="lg" className="w-full rounded-xl text-sm font-bold" onClick={generate}>
+            <Sparkles size={18} />
+            {format === "board" ? "Generate board paper" : "Generate test"}
+          </Button>
+        </div>
+      )}
+
       {loading && (
         <div className="rounded-2xl border border-border bg-card px-4 py-6">
           <div className="flex items-center gap-3">
             <Loader2 className="shrink-0 animate-spin text-primary" size={20} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">
-                Building your test from {notes.length} note{notes.length === 1 ? "" : "s"}…
+                Building your {format === "board" ? "board paper" : "test"} from {notes.length} note
+                {notes.length === 1 ? "" : "s"}…
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {progressStage} This can take up to a minute for large notes.
@@ -204,14 +316,6 @@ function SectionTestPage() {
           <p className="mt-2 text-[11px] text-muted-foreground">
             {(totalChars / 1000).toFixed(0)}k characters of study material · one combined AI request
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3 w-full rounded-xl"
-            disabled
-          >
-            Working…
-          </Button>
         </div>
       )}
 
@@ -238,11 +342,7 @@ function SectionTestPage() {
               </a>
             </>
           )}
-          <Button
-            size="lg"
-            className="mt-3 w-full rounded-xl"
-            onClick={() => setAttempt((a) => a + 1)}
-          >
+          <Button size="lg" className="mt-3 w-full rounded-xl" onClick={generate}>
             Try again
           </Button>
           <Button
@@ -256,13 +356,35 @@ function SectionTestPage() {
         </div>
       )}
 
-      {questions && (
+      {questions && !loading && (
         <section className="rounded-2xl border border-border bg-card p-5">
           <QuizView
-            key={attempt}
+            key={`q${attempt}`}
             questions={questions}
             regenerating={loading}
-            onRegenerate={() => setAttempt((a) => a + 1)}
+            onRegenerate={generate}
+            difficulty={difficulty}
+            onDifficultyChange={setDifficulty}
+            masteryScope={masteryScope}
+          />
+        </section>
+      )}
+
+      {exam && !loading && (
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3">
+            <h2 className="text-base font-bold leading-snug">{exam.title}</h2>
+            <p className="text-xs text-muted-foreground">
+              {exam.totalMarks} marks · {exam.timeLimitMinutes} minutes
+              {exam.instructions ? ` · ${exam.instructions}` : ""}
+            </p>
+          </div>
+          <BoardExamView
+            key={`b${attempt}`}
+            exam={exam}
+            regenerating={loading}
+            onRegenerate={generate}
+            masteryScope={masteryScope}
           />
         </section>
       )}
