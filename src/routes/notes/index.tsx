@@ -264,7 +264,7 @@ function NotesPage() {
               <ClipboardList size={18} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">Full Section Test</p>
+              <h2 className="text-sm font-bold">Full Section Test</h2>
               <p className="text-xs text-muted-foreground">
                 Combine several notes into one longer quiz with a per-note breakdown.
               </p>
@@ -328,6 +328,10 @@ function NotesPage() {
           </div>
         </div>
       )}
+
+      <h2 className="mt-6 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+        Your notes
+      </h2>
 
       <div className="mt-4 space-y-4 pb-4">
         {notes.length === 0 && !busy && (

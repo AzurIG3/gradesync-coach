@@ -106,7 +106,7 @@ function AddSubjectButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="h-12 w-12 rounded-full p-0 shadow-md">
+        <Button size="lg" aria-label="Add subject" className="h-12 w-12 rounded-full p-0 shadow-md">
           <Plus size={24} />
         </Button>
       </DialogTrigger>
