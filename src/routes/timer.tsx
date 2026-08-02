@@ -45,11 +45,14 @@ function TimerPage() {
   const [running, setRunning] = useState(false);
   const totalRef = useRef(savedTimer.focusMin * 60);
   const [alarm, setAlarm] = useState<AlarmId>("chime");
+  const [customName, setCustomName] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     setAlarm(getAlarmSound());
+    void loadCustomAlarm().then((c) => setCustomName(c?.name ?? null));
   }, []);
+
 
   // Focus mode: silence the app's own notifications while a session runs.
   useEffect(() => {
