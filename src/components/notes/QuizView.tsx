@@ -1,8 +1,27 @@
-import { useMemo, useState } from "react";
-import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  X,
+  RotateCw,
+  Trophy,
+  TrendingUp,
+  AlertTriangle,
+  Sparkles,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { recordResults } from "@/lib/mastery";
 import type { QuizQuestion } from "@/lib/notes-parse";
+
+export type Difficulty = "easy" | "medium" | "hard";
+
+const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+  { id: "easy", label: "Easy" },
+  { id: "medium", label: "Medium" },
+  { id: "hard", label: "Hard" },
+];
 
 type Breakdown = { topic: string; correct: number; total: number; pct: number };
 
@@ -32,10 +51,16 @@ export function QuizView({
   questions,
   onRegenerate,
   regenerating,
+  difficulty,
+  onDifficultyChange,
+  masteryScope,
 }: {
   questions: QuizQuestion[];
   onRegenerate?: () => void;
   regenerating?: boolean;
+  difficulty?: Difficulty;
+  onDifficultyChange?: (d: Difficulty) => void;
+  masteryScope?: string;
 }) {
 
   const [i, setI] = useState(0);
@@ -43,8 +68,25 @@ export function QuizView({
   const [answers, setAnswers] = useState<number[]>([]);
   const [done, setDone] = useState(false);
   const [review, setReview] = useState(false);
+  const [showExplanations, setShowExplanations] = useState(true);
+  const recordedRef = useRef(false);
 
   const hasTopics = useMemo(() => questions.some((q) => q.topic), [questions]);
+  const hasExplanations = useMemo(() => questions.some((q) => q.explanation), [questions]);
+
+  // Feed the mastery tracker once, as soon as the quiz is finished.
+  useEffect(() => {
+    if (!done || recordedRef.current || !masteryScope) return;
+    recordedRef.current = true;
+    recordResults(
+      masteryScope,
+      questions.map((q, idx) => ({
+        topic: q.topic?.trim() || "General",
+        correct: answers[idx] === q.answerIndex,
+      })),
+    );
+  }, [done, masteryScope, questions, answers]);
+
 
   if (!questions.length) {
     return (
