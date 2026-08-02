@@ -84,9 +84,11 @@ function NoteDetailPage() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [gen, setGen] = useState(0);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
 
+  const masteryScope = `note:${noteId}`;
 
-  async function run(mode: Mode) {
+  async function run(mode: Mode, diff: Difficulty = difficulty) {
     if (pending || !note) return;
     setOpen(false);
     setError(null);
@@ -99,6 +101,9 @@ function NoteDetailPage() {
           mode,
           text: note.content,
           avoid: varied ? loadAsked(memoryKey) : [],
+          weak: varied ? weakTopics(masteryScope) : [],
+          strong: varied ? strongTopics(masteryScope) : [],
+          difficulty: diff,
           apiKey: getUserApiKey(),
         },
       })) as
@@ -113,8 +118,9 @@ function NoteDetailPage() {
       if (mode === "quiz") {
         const asked = loadAsked(memoryKey);
         const all = parseQuiz(res.text);
-        const fresh = dedupeBy(all, (q) => `${q.question} ${q.options.join(" ")}`, asked);
-        const kept = fresh.length ? fresh : all; // never leave the student with nothing
+        // Removes repeats against past sets AND inside this set.
+        const fresh = dedupeQuestions(all, asked);
+        const kept = fresh.length ? fresh : dedupeQuestions(all); // never leave the student with nothing
         rememberAsked(memoryKey, kept.map((q) => q.question));
         text = JSON.stringify(kept);
       } else if (mode === "flashcards") {
@@ -125,6 +131,7 @@ function NoteDetailPage() {
         rememberAsked(memoryKey, kept.map((c) => c.q));
         text = JSON.stringify(kept);
       }
+
 
       noteActions.setOutput(note.id, mode, text);
       setGen((g) => g + 1);
