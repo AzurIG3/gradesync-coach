@@ -50,10 +50,12 @@ const VIEW_LABEL: Record<View, string> = {
   chat: "Ask about this note",
 };
 
-/** Heuristic: does the extracted content include a Markdown table? */
-function hasMarkdownTable(text: string): boolean {
-  return /(^|\n)\s*\|.+\|\s*\n\s*\|[\s:-]+\|/.test(text);
-}
+const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+  { id: "easy", label: "Easy" },
+  { id: "medium", label: "Medium" },
+  { id: "hard", label: "Hard" },
+];
+
 
 export const Route = createFileRoute("/notes/$noteId")({
   component: NoteDetailPage,
