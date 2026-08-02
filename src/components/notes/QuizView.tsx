@@ -345,6 +345,8 @@ export function QuizView({
 
   return (
     <div>
+      {difficultyPicker}
+
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-semibold text-muted-foreground">
           Question {i + 1} of {questions.length}
