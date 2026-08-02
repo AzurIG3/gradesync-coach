@@ -283,6 +283,31 @@ function NoteDetailPage() {
           <SheetHeader className="text-left">
             <SheetTitle>What should I make from this note?</SheetTitle>
           </SheetHeader>
+
+          <div className="mt-4">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Difficulty (for Quiz Me &amp; Flashcards)
+            </p>
+            <div className="flex gap-1 rounded-full bg-muted p-1">
+              {DIFFICULTIES.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setDifficulty(d.id)}
+                  aria-pressed={difficulty === d.id}
+                  className={cn(
+                    "flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition",
+                    difficulty === d.id
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-4 grid grid-cols-2 gap-3">
             {OPTIONS.map(({ mode, label, icon: Icon }) => (
               <Button
