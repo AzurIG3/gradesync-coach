@@ -184,6 +184,46 @@ export function QuizView({
           </div>
         )}
 
+        {hasExplanations && (
+          <div className="mt-6 w-full text-left">
+            <button
+              type="button"
+              onClick={() => setShowExplanations((v) => !v)}
+              className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold transition hover:bg-muted"
+            >
+              {showExplanations ? <EyeOff size={13} /> : <Eye size={13} />}
+              {showExplanations ? "Hide explanations" : "Show explanations"}
+            </button>
+            {showExplanations && (
+              <ul className="space-y-2">
+                {questions.map((qq, idx) => {
+                  const right = answers[idx] === qq.answerIndex;
+                  return (
+                    <li key={idx} className="rounded-xl border border-border bg-card p-3">
+                      <div className="flex items-start gap-2">
+                        {right ? (
+                          <Check size={14} className="mt-0.5 shrink-0 text-emerald-600" />
+                        ) : (
+                          <X size={14} className="mt-0.5 shrink-0 text-rose-600" />
+                        )}
+                        <p className="text-xs font-bold leading-snug">{qq.question}</p>
+                      </div>
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-semibold text-foreground">
+                          {qq.options[qq.answerIndex]}
+                        </span>
+                        {qq.explanation ? ` — ${qq.explanation}` : ""}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+
+
+
         <div className="mt-6 flex w-full flex-col gap-2">
           <Button
             size="lg"
