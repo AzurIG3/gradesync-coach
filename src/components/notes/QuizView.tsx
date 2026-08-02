@@ -1,8 +1,27 @@
-import { useMemo, useState } from "react";
-import { Check, X, RotateCw, Trophy, TrendingUp, AlertTriangle, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  X,
+  RotateCw,
+  Trophy,
+  TrendingUp,
+  AlertTriangle,
+  Sparkles,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { recordResults } from "@/lib/mastery";
 import type { QuizQuestion } from "@/lib/notes-parse";
+
+export type Difficulty = "easy" | "medium" | "hard";
+
+const DIFFICULTIES: { id: Difficulty; label: string }[] = [
+  { id: "easy", label: "Easy" },
+  { id: "medium", label: "Medium" },
+  { id: "hard", label: "Hard" },
+];
 
 type Breakdown = { topic: string; correct: number; total: number; pct: number };
 
@@ -32,10 +51,16 @@ export function QuizView({
   questions,
   onRegenerate,
   regenerating,
+  difficulty,
+  onDifficultyChange,
+  masteryScope,
 }: {
   questions: QuizQuestion[];
   onRegenerate?: () => void;
   regenerating?: boolean;
+  difficulty?: Difficulty;
+  onDifficultyChange?: (d: Difficulty) => void;
+  masteryScope?: string;
 }) {
 
   const [i, setI] = useState(0);
@@ -43,8 +68,25 @@ export function QuizView({
   const [answers, setAnswers] = useState<number[]>([]);
   const [done, setDone] = useState(false);
   const [review, setReview] = useState(false);
+  const [showExplanations, setShowExplanations] = useState(true);
+  const recordedRef = useRef(false);
 
   const hasTopics = useMemo(() => questions.some((q) => q.topic), [questions]);
+  const hasExplanations = useMemo(() => questions.some((q) => q.explanation), [questions]);
+
+  // Feed the mastery tracker once, as soon as the quiz is finished.
+  useEffect(() => {
+    if (!done || recordedRef.current || !masteryScope) return;
+    recordedRef.current = true;
+    recordResults(
+      masteryScope,
+      questions.map((q, idx) => ({
+        topic: q.topic?.trim() || "General",
+        correct: answers[idx] === q.answerIndex,
+      })),
+    );
+  }, [done, masteryScope, questions, answers]);
+
 
   if (!questions.length) {
     return (
@@ -60,7 +102,36 @@ export function QuizView({
     setAnswers([]);
     setDone(false);
     setReview(false);
+    recordedRef.current = false;
   };
+
+  const difficultyPicker =
+    difficulty && onDifficultyChange ? (
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          Difficulty
+        </span>
+        <div className="flex gap-1 rounded-full bg-muted p-1">
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => onDifficultyChange(d.id)}
+              aria-pressed={difficulty === d.id}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-bold transition",
+                difficulty === d.id
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
 
   if (done && !review) {
     const score = answers.reduce(
@@ -112,6 +183,46 @@ export function QuizView({
             )}
           </div>
         )}
+
+        {hasExplanations && (
+          <div className="mt-6 w-full text-left">
+            <button
+              type="button"
+              onClick={() => setShowExplanations((v) => !v)}
+              className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold transition hover:bg-muted"
+            >
+              {showExplanations ? <EyeOff size={13} /> : <Eye size={13} />}
+              {showExplanations ? "Hide explanations" : "Show explanations"}
+            </button>
+            {showExplanations && (
+              <ul className="space-y-2">
+                {questions.map((qq, idx) => {
+                  const right = answers[idx] === qq.answerIndex;
+                  return (
+                    <li key={idx} className="rounded-xl border border-border bg-card p-3">
+                      <div className="flex items-start gap-2">
+                        {right ? (
+                          <Check size={14} className="mt-0.5 shrink-0 text-emerald-600" />
+                        ) : (
+                          <X size={14} className="mt-0.5 shrink-0 text-rose-600" />
+                        )}
+                        <p className="text-xs font-bold leading-snug">{qq.question}</p>
+                      </div>
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-semibold text-foreground">
+                          {qq.options[qq.answerIndex]}
+                        </span>
+                        {qq.explanation ? ` — ${qq.explanation}` : ""}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+
+
 
         <div className="mt-6 flex w-full flex-col gap-2">
           <Button
@@ -234,6 +345,8 @@ export function QuizView({
 
   return (
     <div>
+      {difficultyPicker}
+
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-semibold text-muted-foreground">
           Question {i + 1} of {questions.length}

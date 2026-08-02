@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Check, KeyRound, Monitor, Moon, Play, Sun, Volume2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
@@ -8,12 +8,16 @@ import { getUserApiKey, setUserApiKey } from "@/lib/ai-config";
 import { useTheme, type Theme } from "@/lib/theme";
 import {
   ALARM_OPTIONS,
+  clearCustomAlarm,
   getAlarmSound,
+  loadCustomAlarm,
   playAlarm,
   primeAudio,
+  saveCustomAlarm,
   setAlarmSound,
   type AlarmId,
 } from "@/lib/alarm";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
@@ -44,6 +48,9 @@ function SettingsPage() {
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
   const [alarm, setAlarm] = useState<AlarmId>("chime");
+  const [customName, setCustomName] = useState<string | null>(null);
+  const [soundMsg, setSoundMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Light", icon: Sun },
@@ -54,7 +61,9 @@ function SettingsPage() {
   useEffect(() => {
     setKey(getUserApiKey());
     setAlarm(getAlarmSound());
+    void loadCustomAlarm().then((c) => setCustomName(c?.name ?? null));
   }, []);
+
 
   function save() {
     setUserApiKey(key);
@@ -146,11 +155,116 @@ function SettingsPage() {
               );
             })}
           </div>
+
+          {/* Custom uploaded sound */}
+          <div className="mt-3 rounded-xl border border-dashed border-border p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Upload size={16} className="text-primary" />
+              <p className="text-sm font-bold">Your own sound</p>
+            </div>
+            {customName ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setAlarm("custom");
+                  setAlarmSound("custom");
+                  primeAudio();
+                  void playAlarm("custom");
+                }}
+                aria-pressed={alarm === "custom"}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition",
+                  alarm === "custom"
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-background",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                    alarm === "custom"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground",
+                  )}
+                >
+                  <Play size={14} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{customName}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Saved on this device — tap to preview
+                  </span>
+                </span>
+                {alarm === "custom" && <Check size={18} className="shrink-0 text-primary" />}
+              </button>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Upload an MP3 or WAV (up to 5 MB) to use it as your alarm instead.
+              </p>
+            )}
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="audio/*,.mp3,.wav,.m4a,.ogg"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                setSoundMsg(null);
+                const res = await saveCustomAlarm(file);
+                if (!res.ok) {
+                  setSoundMsg(res.message ?? "We couldn't save that sound.");
+                  return;
+                }
+                setCustomName(file.name);
+                setAlarm("custom");
+                setAlarmSound("custom");
+                setSoundMsg("Saved. Your sound will play when the timer ends.");
+              }}
+            />
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload size={14} />
+                {customName ? "Replace file" : "Upload sound"}
+              </Button>
+              {customName && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-xl text-destructive"
+                  onClick={async () => {
+                    await clearCustomAlarm();
+                    setCustomName(null);
+                    setSoundMsg(null);
+                    if (alarm === "custom") {
+                      setAlarm("chime");
+                      setAlarmSound("chime");
+                    }
+                  }}
+                >
+                  <Trash2 size={14} /> Remove
+                </Button>
+              )}
+            </div>
+            {soundMsg && <p className="mt-2 text-xs text-muted-foreground">{soundMsg}</p>}
+          </div>
+
           <p className="mt-3 text-xs text-muted-foreground">
-            While a focus session is running, the app pauses its own notifications so you aren\'t
+            While a focus session is running, the app pauses its own notifications so you aren&apos;t
             interrupted.
           </p>
         </section>
+
 
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">

@@ -4,6 +4,12 @@ function str(v: unknown, max = 200_000): string {
   return typeof v === "string" ? v.slice(0, max) : "";
 }
 
+function strList(v: unknown, cap = 40): string[] {
+  return Array.isArray(v)
+    ? v.map((a) => str(a, 300).trim()).filter(Boolean).slice(-cap)
+    : [];
+}
+
 /** Extract raw text from an uploaded PDF or image (base64) using Gemini. */
 export const extractFileText = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
@@ -54,21 +60,39 @@ export const generateFromNote = createServerFn({ method: "POST" })
     }
     const text = str(o.text, 60_000);
     if (!text.trim()) throw new Error("Note is empty");
-    const avoid = Array.isArray(o.avoid)
-      ? o.avoid.map((a) => str(a, 300).trim()).filter(Boolean).slice(-40)
-      : [];
+    const rawDiff = str(o.difficulty, 10);
+    const difficulty = (["easy", "medium", "hard"].includes(rawDiff) ? rawDiff : "medium") as
+      | "easy"
+      | "medium"
+      | "hard";
     return {
       mode: mode as "summary" | "details" | "flashcards" | "quiz",
       text,
-      avoid,
+      avoid: strList(o.avoid),
+      weak: strList(o.weak, 8),
+      strong: strList(o.strong, 8),
+      difficulty,
       apiKey: str(o.apiKey, 200).trim(),
     };
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
-    const { callGemini, MODE_PROMPTS, buildAvoidBlock } = await import("./notes.server");
+    const {
+      callGemini,
+      MODE_PROMPTS,
+      buildAvoidBlock,
+      buildFocusBlock,
+      difficultyHint,
+      WITHIN_SET_HINT,
+    } = await import("./notes.server");
     const key = resolveApiKey(data.apiKey);
     const varied = data.mode === "quiz" || data.mode === "flashcards";
+    const system = varied
+      ? MODE_PROMPTS[data.mode] +
+        WITHIN_SET_HINT +
+        difficultyHint(data.difficulty) +
+        buildFocusBlock(data.weak, data.strong)
+      : MODE_PROMPTS[data.mode];
     // A per-run nonce nudges the model off its "default" set of questions.
     const nonce = Math.random().toString(36).slice(2, 10);
     const parts = varied
@@ -81,9 +105,8 @@ export const generateFromNote = createServerFn({ method: "POST" })
     return callGemini(
       key,
       parts,
-      MODE_PROMPTS[data.mode],
+      system,
       Boolean(data.apiKey),
       varied ? { temperature: 0.95, topP: 0.95 } : undefined,
     );
   });
-

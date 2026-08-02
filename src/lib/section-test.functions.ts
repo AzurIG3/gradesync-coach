@@ -5,11 +5,23 @@ function str(v: unknown, max = 200_000): string {
   return typeof v === "string" ? v.slice(0, max) : "";
 }
 
+function strList(v: unknown, cap = 40): string[] {
+  return Array.isArray(v)
+    ? v.map((a) => str(a, 300).trim()).filter(Boolean).slice(-cap)
+    : [];
+}
+
 type NoteInput = { title: string; content: string };
 
 /**
- * Generate a longer combined MCQ test across multiple notes in ONE Gemini call.
- * The model tags each question with its source note title so we can show a per-note breakdown.
+ * Generate a longer combined test across multiple notes in ONE Gemini call.
+ *
+ * Two formats:
+ *  - "mcq"   — the classic Full Section Test (flat JSON array of MCQs).
+ *  - "board" — a Board Exam style paper with sections, marks and a time limit.
+ *
+ * Each question is tagged with its source note title so we can show a per-note
+ * breakdown and feed the mastery tracker.
  */
 export const generateSectionTest = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
@@ -25,16 +37,28 @@ export const generateSectionTest = createServerFn({ method: "POST" })
       })
       .filter((n) => n.title && n.content.trim());
     if (!notes.length) throw new Error("Selected notes have no readable content");
-    const avoid = Array.isArray(o.avoid)
-      ? o.avoid.map((a) => str(a, 300).trim()).filter(Boolean).slice(-40)
-      : [];
-    return { notes, avoid, apiKey: str(o.apiKey, 200).trim() };
+    const rawDiff = str(o.difficulty, 10);
+    const difficulty = (["easy", "medium", "hard"].includes(rawDiff) ? rawDiff : "medium") as
+      | "easy"
+      | "medium"
+      | "hard";
+    const format = str(o.format, 10) === "board" ? ("board" as const) : ("mcq" as const);
+    return {
+      notes,
+      avoid: strList(o.avoid),
+      weak: strList(o.weak, 8),
+      strong: strList(o.strong, 8),
+      difficulty,
+      format,
+      apiKey: str(o.apiKey, 200).trim(),
+    };
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
-    const { buildAvoidBlock } = await import("./notes.server");
+    const { buildAvoidBlock, buildFocusBlock, difficultyHint, WITHIN_SET_HINT } = await import(
+      "./notes.server"
+    );
     const key = resolveApiKey(data.apiKey);
-
 
     // Scale question count with total content length: ~1 question per ~1500 chars, clamped 8-15.
     // Fewer questions = faster generation.
@@ -57,7 +81,14 @@ export const generateSectionTest = createServerFn({ method: "POST" })
       (n, i) => `- "${n.title}": ${base + (i < remainder ? 1 : 0)} questions`,
     );
 
-    const systemPrompt = `You are creating a FULL SECTION TEST for a Pakistani Matric (Grade 9-10) student. You have ${data.notes.length} separate notes.
+    const shared = `${WITHIN_SET_HINT}${difficultyHint(data.difficulty)}${buildFocusBlock(
+      data.weak,
+      data.strong,
+    )}
+
+[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]${buildAvoidBlock(data.avoid)}`;
+
+    const mcqPrompt = `You are creating a FULL SECTION TEST for a Pakistani Matric (Grade 9-10) student. You have ${data.notes.length} separate notes.
 
 Create EXACTLY ${desired} multiple-choice questions in total, drawn from ALL the notes together. Use these per-note question counts:
 ${perNoteCounts.join("\n")}
@@ -66,15 +97,42 @@ RULES:
 - Every question must be answerable from the note it's tagged to.
 - The "topic" field MUST match the note's title exactly (case and spelling).
 - Exactly 4 options per question. "answerIndex" is 0-3.
-- Keep the language simple, short sentences. Keep explanations to one short sentence.
-- Cover a mix of easy, medium and slightly harder questions.
-- VARIETY IS REQUIRED: generate a fresh, varied set each time. Deliberately choose different details, angles, phrasings and depth from the most obvious ones, and spread questions across the WHOLE of each note (beginning, middle and end) rather than only the first or most prominent facts. Mix question types (definition, application, cause/effect, comparison, numeric/example based). Assume this content has been tested before — avoid repeating the same questions or wording.
+- Keep the language simple, short sentences. Keep explanations to one short sentence that says WHY the answer is right, using only facts from the notes.
+- VARIETY IS REQUIRED: spread questions across the WHOLE of each note (beginning, middle and end) and mix question types (definition, application, cause/effect, comparison, numeric).
 - Reply with ONLY a valid JSON array — no prose, no code fences, nothing before or after.
 
 Shape:
 [{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title"}]
+${shared}`;
 
-[variation seed: ${Math.random().toString(36).slice(2, 10)} — produce a different selection of questions than any previous attempt]${buildAvoidBlock(data.avoid)}`;
+    const mcqCount = Math.max(6, Math.round(desired * 0.6));
+    const shortCount = Math.max(3, Math.round(desired * 0.35));
+    const longCount = 2;
+
+    const boardPrompt = `You are setting a BOARD EXAM STYLE PRACTICE PAPER for a Pakistani Matric (Grade 9-10) student, in the style of a real board paper. You have ${data.notes.length} separate notes.
+
+Build the paper from ALL the notes together, spreading questions evenly across these notes: ${data.notes
+      .map((n) => `"${n.title}"`)
+      .join(", ")}.
+
+The paper must have EXACTLY these three sections:
+1. "Section A — Objective (MCQs)": ${mcqCount} multiple-choice questions, 1 mark each.
+2. "Section B — Short Questions": ${shortCount} short-answer questions, 3 marks each. Give a concise model answer (2-4 sentences).
+3. "Section C — Long Questions": ${longCount} long-answer questions, 8 marks each. Give a structured model answer (a short paragraph plus 3-5 key points the student must include).
+
+RULES:
+- Every question must be answerable from the notes only.
+- The "topic" field MUST match the source note's title exactly (case and spelling).
+- MCQs have exactly 4 options and "answerIndex" 0-3, plus a one-sentence "explanation".
+- Short and long questions have "modelAnswer" (and "keyPoints" for long questions).
+- Set "timeLimitMinutes" to a realistic time for this paper, and "totalMarks" to the sum of all marks.
+- Keep the language simple. Reply with ONLY a valid JSON object — no prose, no code fences.
+
+Shape:
+{"title":"Board Exam Style Practice Paper","timeLimitMinutes":60,"totalMarks":40,"instructions":"Attempt all questions.","sections":[{"name":"Section A — Objective (MCQs)","instructions":"Choose the correct option.","questions":[{"type":"mcq","question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"one short sentence","topic":"exact note title","marks":1}]},{"name":"Section B — Short Questions","instructions":"Answer briefly.","questions":[{"type":"short","question":"...","modelAnswer":"2-4 sentences","topic":"exact note title","marks":3}]},{"name":"Section C — Long Questions","instructions":"Answer in detail.","questions":[{"type":"long","question":"...","modelAnswer":"short paragraph","keyPoints":["...","..."],"topic":"exact note title","marks":8}]}]}
+${shared}`;
+
+    const systemPrompt = data.format === "board" ? boardPrompt : mcqPrompt;
 
     // The "-lite-latest" alias always points at the current fast model, so this
     // never breaks when Google retires a dated model id (which returns 404).
@@ -83,7 +141,7 @@ Shape:
     )}`;
     // Hard timeout so the UI is never stuck waiting forever on a hung request.
     const controller = new AbortController();
-    const TIMEOUT_MS = 75_000;
+    const TIMEOUT_MS = 90_000;
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     let res: Response;
@@ -98,7 +156,7 @@ Shape:
           generationConfig: {
             temperature: 0.95,
             topP: 0.95,
-            maxOutputTokens: 2560,
+            maxOutputTokens: data.format === "board" ? 6144 : 2560,
             responseMimeType: "application/json",
           },
         }),

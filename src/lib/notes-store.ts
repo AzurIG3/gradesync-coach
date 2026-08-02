@@ -9,6 +9,10 @@ export interface Note {
   fileName: string;
   createdAt: string;
   outputs: NoteOutputs;
+  /** Subject this note belongs to. Empty / missing means "General". */
+  subjectId?: string;
+  /** Original upload size in bytes (used for the "File size" sort). */
+  fileSize?: number;
 }
 
 const KEY = "study-planner-notes-v1";
@@ -51,10 +55,24 @@ function uid() {
 }
 
 export const noteActions = {
-  add(title: string, content: string, fileName: string): string {
+  add(
+    title: string,
+    content: string,
+    fileName: string,
+    meta?: { subjectId?: string; fileSize?: number },
+  ): string {
     const id = uid();
     notes = [
-      { id, title, content, fileName, createdAt: new Date().toISOString(), outputs: {} },
+      {
+        id,
+        title,
+        content,
+        fileName,
+        createdAt: new Date().toISOString(),
+        outputs: {},
+        subjectId: meta?.subjectId || undefined,
+        fileSize: meta?.fileSize,
+      },
       ...notes,
     ];
     persist();
@@ -70,8 +88,23 @@ export const noteActions = {
     notes = notes.map((n) => (n.id === id ? { ...n, title: t } : n));
     persist();
   },
+  setSubject(id: string, subjectId: string) {
+    notes = notes.map((n) => (n.id === id ? { ...n, subjectId: subjectId || undefined } : n));
+    persist();
+  },
   setOutput(id: string, mode: keyof NoteOutputs, text: string) {
     notes = notes.map((n) => (n.id === id ? { ...n, outputs: { ...n.outputs, [mode]: text } } : n));
     persist();
   },
 };
+
+/** Rough size of a note in bytes — falls back to the cleaned text length. */
+export function noteSize(n: Note): number {
+  return n.fileSize ?? n.content.length;
+}
+
+export function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
