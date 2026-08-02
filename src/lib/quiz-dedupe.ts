@@ -42,6 +42,8 @@ export function similarity(a: string, b: string): number {
 }
 
 const NEAR = 0.62;
+/** Question stems repeat more subtly than full questions, so judge them harder. */
+const NEAR_STEM = 0.52;
 
 export function isNearDuplicate(text: string, others: string[]): boolean {
   const norm = normalizeQ(text);
@@ -63,6 +65,57 @@ export function dedupeBy<T>(items: T[], key: (item: T) => string, previous: stri
   }
   return out;
 }
+
+/* ---------- stronger, question-aware de-duplication ---------- */
+
+/** A fingerprint of the answer options, order-independent. */
+function optionsKey(options: string[]): string {
+  return options
+    .map((o) => normalizeQ(o))
+    .filter(Boolean)
+    .sort()
+    .join("|");
+}
+
+type QLike = { question: string; options: string[] };
+
+/**
+ * De-duplicates a generated set of questions against previously asked ones AND
+ * against each other. A question is rejected when:
+ *  - its stem is identical or highly similar to one already kept, OR
+ *  - its option set is exactly the same as one already kept, OR
+ *  - the combined stem+options text is a near duplicate.
+ *
+ * This guarantees the same stem or nearly identical options can never appear
+ * twice inside a single generated quiz, even across regenerations.
+ */
+export function dedupeQuestions<T extends QLike>(items: T[], previous: string[] = []): T[] {
+  const stems: string[] = [...previous];
+  const combos: string[] = [...previous];
+  const optionKeys = new Set<string>();
+  const out: T[] = [];
+
+  for (const item of items) {
+    const stem = (item.question ?? "").trim();
+    if (!stem) continue;
+    const combo = `${stem} ${item.options.join(" ")}`;
+    const oKey = optionsKey(item.options);
+
+    const stemDupe = stems.some(
+      (s) => normalizeQ(s) === normalizeQ(stem) || similarity(s, stem) >= NEAR_STEM,
+    );
+    if (stemDupe) continue;
+    if (oKey && optionKeys.has(oKey)) continue;
+    if (isNearDuplicate(combo, combos)) continue;
+
+    stems.push(stem);
+    combos.push(combo);
+    if (oKey) optionKeys.add(oKey);
+    out.push(item);
+  }
+  return out;
+}
+
 
 /* ---------- persistent "already asked" memory ---------- */
 
