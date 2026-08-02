@@ -239,7 +239,7 @@ function TimerPage() {
                 setAlarm(o.id);
                 setAlarmSound(o.id);
                 primeAudio();
-                playAlarm(o.id);
+                void playAlarm(o.id);
               }}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 alarm === o.id ? "bg-primary text-primary-foreground shadow" : "bg-muted"
@@ -248,10 +248,26 @@ function TimerPage() {
               {o.label}
             </button>
           ))}
+          {customName && (
+            <button
+              onClick={() => {
+                setAlarm("custom");
+                setAlarmSound("custom");
+                primeAudio();
+                void playAlarm("custom");
+              }}
+              className={`max-w-[60%] truncate rounded-full px-4 py-2 text-sm font-semibold transition ${
+                alarm === "custom" ? "bg-primary text-primary-foreground shadow" : "bg-muted"
+              }`}
+            >
+              {customName}
+            </button>
+          )}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Tap to preview and pick. Change it any time in Settings.
+          Tap to preview and pick. Upload your own sound in Settings.
         </p>
+
       </div>
 
       {/* Durations */}
