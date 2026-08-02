@@ -48,6 +48,9 @@ function SettingsPage() {
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
   const [alarm, setAlarm] = useState<AlarmId>("chime");
+  const [customName, setCustomName] = useState<string | null>(null);
+  const [soundMsg, setSoundMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Light", icon: Sun },
@@ -58,7 +61,9 @@ function SettingsPage() {
   useEffect(() => {
     setKey(getUserApiKey());
     setAlarm(getAlarmSound());
+    void loadCustomAlarm().then((c) => setCustomName(c?.name ?? null));
   }, []);
+
 
   function save() {
     setUserApiKey(key);
