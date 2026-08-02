@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Check, KeyRound, Monitor, Moon, Play, Sun, Volume2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
@@ -8,12 +8,16 @@ import { getUserApiKey, setUserApiKey } from "@/lib/ai-config";
 import { useTheme, type Theme } from "@/lib/theme";
 import {
   ALARM_OPTIONS,
+  clearCustomAlarm,
   getAlarmSound,
+  loadCustomAlarm,
   playAlarm,
   primeAudio,
+  saveCustomAlarm,
   setAlarmSound,
   type AlarmId,
 } from "@/lib/alarm";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
