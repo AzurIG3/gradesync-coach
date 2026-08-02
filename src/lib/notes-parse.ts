@@ -117,3 +117,129 @@ export function extractChart(raw: string): { chart: ChartSpec | null; markdown: 
   }
   return { chart: null, markdown };
 }
+
+/* ---------------- Board exam style paper ---------------- */
+
+export type BoardQuestion = {
+  type: "mcq" | "short" | "long";
+  question: string;
+  options: string[];
+  answerIndex: number;
+  modelAnswer?: string;
+  keyPoints?: string[];
+  explanation?: string;
+  topic?: string;
+  marks: number;
+};
+
+export type BoardSection = {
+  name: string;
+  instructions?: string;
+  questions: BoardQuestion[];
+};
+
+export type BoardExam = {
+  title: string;
+  instructions?: string;
+  timeLimitMinutes: number;
+  totalMarks: number;
+  sections: BoardSection[];
+};
+
+function extractJsonObject(raw: string): unknown {
+  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    /* fall through */
+  }
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    try {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    } catch {
+      /* ignore */
+    }
+  }
+  return null;
+}
+
+export function parseBoardExam(raw: string): BoardExam | null {
+  const data = extractJsonObject(raw) as Record<string, unknown> | null;
+  if (!data || typeof data !== "object") return null;
+  const rawSections = Array.isArray(data.sections) ? data.sections : [];
+
+  const sections: BoardSection[] = rawSections
+    .map((s: unknown) => {
+      const o = (s ?? {}) as Record<string, unknown>;
+      const name = typeof o.name === "string" ? o.name.trim() : "";
+      const questions = (Array.isArray(o.questions) ? o.questions : [])
+        .map((q: unknown): BoardQuestion | null => {
+          const qq = (q ?? {}) as Record<string, unknown>;
+          const question = typeof qq.question === "string" ? qq.question.trim() : "";
+          if (!question) return null;
+          const rawType = typeof qq.type === "string" ? qq.type.toLowerCase() : "";
+          const options = Array.isArray(qq.options)
+            ? qq.options.map((x) => String(x)).filter(Boolean)
+            : [];
+          const type: BoardQuestion["type"] =
+            rawType === "mcq" || rawType === "short" || rawType === "long"
+              ? (rawType as BoardQuestion["type"])
+              : options.length >= 2
+                ? "mcq"
+                : "short";
+          const answerIndex = typeof qq.answerIndex === "number" ? qq.answerIndex : -1;
+          if (type === "mcq" && (options.length < 2 || answerIndex < 0 || answerIndex >= options.length)) {
+            return null;
+          }
+          return {
+            type,
+            question,
+            options,
+            answerIndex,
+            modelAnswer:
+              typeof qq.modelAnswer === "string"
+                ? qq.modelAnswer.trim()
+                : typeof qq.answer === "string"
+                  ? qq.answer.trim()
+                  : undefined,
+            keyPoints: Array.isArray(qq.keyPoints)
+              ? qq.keyPoints.map((x) => String(x)).filter(Boolean)
+              : undefined,
+            explanation: typeof qq.explanation === "string" ? qq.explanation : undefined,
+            topic: typeof qq.topic === "string" && qq.topic.trim() ? qq.topic.trim() : undefined,
+            marks:
+              typeof qq.marks === "number" && qq.marks > 0
+                ? qq.marks
+                : type === "mcq"
+                  ? 1
+                  : type === "short"
+                    ? 3
+                    : 8,
+          };
+        })
+        .filter((q): q is BoardQuestion => q !== null);
+      return { name: name || "Section", instructions: typeof o.instructions === "string" ? o.instructions : undefined, questions };
+    })
+    .filter((s) => s.questions.length > 0);
+
+  if (!sections.length) return null;
+
+  const computedMarks = sections.reduce(
+    (sum, s) => sum + s.questions.reduce((a, q) => a + q.marks, 0),
+    0,
+  );
+  const time = typeof data.timeLimitMinutes === "number" && data.timeLimitMinutes > 0
+    ? Math.round(data.timeLimitMinutes)
+    : Math.max(20, Math.round(computedMarks * 1.5));
+
+  return {
+    title: typeof data.title === "string" && data.title.trim() ? data.title.trim() : "Board Exam Style Practice Paper",
+    instructions: typeof data.instructions === "string" ? data.instructions : undefined,
+    timeLimitMinutes: time,
+    totalMarks:
+      typeof data.totalMarks === "number" && data.totalMarks > 0 ? data.totalMarks : computedMarks,
+    sections,
+  };
+}
