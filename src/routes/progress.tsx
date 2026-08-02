@@ -100,6 +100,9 @@ function ProgressPage() {
           })}
         </ul>
       )}
+
+      <MasteryPanel />
     </AppShell>
+
   );
 }
