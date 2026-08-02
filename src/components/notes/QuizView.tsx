@@ -102,7 +102,36 @@ export function QuizView({
     setAnswers([]);
     setDone(false);
     setReview(false);
+    recordedRef.current = false;
   };
+
+  const difficultyPicker =
+    difficulty && onDifficultyChange ? (
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          Difficulty
+        </span>
+        <div className="flex gap-1 rounded-full bg-muted p-1">
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => onDifficultyChange(d.id)}
+              aria-pressed={difficulty === d.id}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-bold transition",
+                difficulty === d.id
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
 
   if (done && !review) {
     const score = answers.reduce(
