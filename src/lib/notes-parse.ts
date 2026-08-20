@@ -1,4 +1,4 @@
-export type Flashcard = { q: string; a: string };
+export type Flashcard = { q: string; a: string; mnemonic?: string };
 export type QuizQuestion = {
   question: string;
   options: string[];
