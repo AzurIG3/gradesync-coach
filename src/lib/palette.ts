@@ -96,8 +96,8 @@ export const PALETTES: Palette[] = [
   {
     id: "purple",
     label: "Midnight Purple",
-    swatch: ["#b39df", "#7c5ce0", "#2c2350"],
-    themeColor: "#b39df",
+    swatch: ["#b39dfa", "#7c5ce0", "#2c2350"],
+    themeColor: "#b39dfa",
     light: {
       "--primary": "oklch(0.58 0.17 300)",
       "--primary-foreground": "oklch(0.99 0 0)",
