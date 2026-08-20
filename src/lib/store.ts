@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { syllabusFor, type ClassLevel } from "./syllabus";
+import { logSession } from "./sessions";
 
 export type TopicStatus = "not_started" | "in_progress" | "completed";
 
@@ -6,6 +8,8 @@ export interface Topic {
   id: string;
   name: string;
   status: TopicStatus;
+  /** True when the topic came from the built-in syllabus dataset. */
+  fromSyllabus?: boolean;
 }
 
 export interface Subject {
@@ -14,6 +18,8 @@ export interface Subject {
   color: string;
   examDate: string;
   topics: Topic[];
+  /** Class level — drives the syllabus dataset and which resources are shown. */
+  classLevel?: ClassLevel;
 }
 
 export interface DailyTask {
@@ -104,13 +110,43 @@ export function nextColor(): string {
 }
 
 export const actions = {
-  addSubject(name: string, examDate: string) {
+  addSubject(name: string, examDate: string, classLevel: ClassLevel = "matric") {
+    // Auto-populate the chapter checklist from the built-in syllabus dataset.
+    const chapters = syllabusFor(name, classLevel);
+    const topics: Topic[] = chapters.map((c) => ({
+      id: uid(),
+      name: c,
+      status: "not_started" as TopicStatus,
+      fromSyllabus: true,
+    }));
     setState((s) => ({
       ...s,
       subjects: [
         ...s.subjects,
-        { id: uid(), name, examDate, color: SUBJECT_COLORS[s.subjects.length % SUBJECT_COLORS.length], topics: [] },
+        {
+          id: uid(),
+          name,
+          examDate,
+          classLevel,
+          color: SUBJECT_COLORS[s.subjects.length % SUBJECT_COLORS.length],
+          topics,
+        },
       ],
+    }));
+  },
+  /** Re-applies the syllabus dataset, keeping custom topics and progress. */
+  syncSyllabus(subjectId: string) {
+    setState((s) => ({
+      ...s,
+      subjects: s.subjects.map((sub) => {
+        if (sub.id !== subjectId) return sub;
+        const chapters = syllabusFor(sub.name, sub.classLevel ?? "matric");
+        const have = new Set(sub.topics.map((t) => t.name.toLowerCase()));
+        const added: Topic[] = chapters
+          .filter((c) => !have.has(c.toLowerCase()))
+          .map((c) => ({ id: uid(), name: c, status: "not_started" as TopicStatus, fromSyllabus: true }));
+        return { ...sub, topics: [...sub.topics, ...added] };
+      }),
     }));
   },
   updateSubject(id: string, patch: Partial<Omit<Subject, "id" | "topics">>) {
@@ -175,6 +211,8 @@ export const actions = {
         actions.setTopicStatus(after.subjectId, after.topicId, "in_progress");
       }
     }
+    // Study history: a newly completed task counts as study activity.
+    if (before && !before.done && after?.done) logSession("task");
     // Streak: when a task is newly completed for today, bump.
     const today = todayISO();
     if (before && !before.done && after?.done && after.date === today) {

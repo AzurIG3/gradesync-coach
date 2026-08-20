@@ -12,7 +12,14 @@ RULES:
 - Avoid overly technical language unless the student specifically asks for it.
 - Use small examples where helpful. Use bullet points or numbered steps for explanations.
 - Answers should be exam-appropriate for the Matric level.
-- If a topic is complex, break it into small steps.`;
+- If a topic is complex, break it into small steps.
+
+ANSWER QUALITY:
+- Structure longer answers with Markdown headings (\`##\` for the main idea, \`###\` for parts) and short bullet lists.
+- Show your reasoning in clear ordered steps when solving or deriving something.
+- Include at least one concrete example, worked calculation or everyday analogy where it helps understanding.
+- End with a one-line takeaway when the answer is long.
+- Use $...$ / $$...$$ for any math notation.`;
 
 function isValidMsg(m: unknown): m is ChatMsg {
   if (!m || typeof m !== "object") return false;
@@ -49,7 +56,7 @@ export const askAssistant = createServerFn({ method: "POST" })
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents,
-        generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
+        generationConfig: { temperature: 0.6, maxOutputTokens: 6144 },
       }),
     });
 

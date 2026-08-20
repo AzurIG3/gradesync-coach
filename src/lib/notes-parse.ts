@@ -1,4 +1,4 @@
-export type Flashcard = { q: string; a: string };
+export type Flashcard = { q: string; a: string; mnemonic?: string };
 export type QuizQuestion = {
   question: string;
   options: string[];
@@ -43,7 +43,13 @@ export function parseFlashcards(raw: string): Flashcard[] {
         const o = (c ?? {}) as Record<string, unknown>;
         const q = typeof o.q === "string" ? o.q : typeof o.question === "string" ? o.question : "";
         const a = typeof o.a === "string" ? o.a : typeof o.answer === "string" ? o.answer : "";
-        return { q: q.trim(), a: a.trim() };
+        const m =
+          typeof o.mnemonic === "string"
+            ? o.mnemonic
+            : typeof o.memoryAid === "string"
+              ? o.memoryAid
+              : "";
+        return { q: q.trim(), a: a.trim(), mnemonic: m.trim() || undefined };
       })
       .filter((c) => c.q && c.a);
     if (cards.length) return cards;
