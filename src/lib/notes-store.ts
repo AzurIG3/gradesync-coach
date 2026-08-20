@@ -13,6 +13,8 @@ export interface Note {
   subjectId?: string;
   /** Original upload size in bytes (used for the "File size" sort). */
   fileSize?: number;
+  /** Syllabus chapter this note was filed under ("Unsorted" when unclear). */
+  chapter?: string;
 }
 
 const KEY = "study-planner-notes-v1";
@@ -77,6 +79,10 @@ export const noteActions = {
     ];
     persist();
     return id;
+  },
+  setChapter(id: string, chapter: string) {
+    notes = notes.map((n) => (n.id === id ? { ...n, chapter: chapter || undefined } : n));
+    persist();
   },
   remove(id: string) {
     notes = notes.filter((n) => n.id !== id);
