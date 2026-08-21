@@ -21,6 +21,10 @@ import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
 import { NoteChat } from "@/components/notes/NoteChat";
 import { EditableTitle } from "@/components/notes/EditableTitle";
+import { ExplainTools } from "@/components/notes/ExplainTools";
+import { chapterOptions } from "@/lib/note-filing";
+import { useStore } from "@/lib/store";
+import { UNSORTED_CHAPTER } from "@/lib/syllabus";
 import { extractChart, parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
@@ -228,7 +232,14 @@ function NoteDetailPage() {
             </Button>
           </div>
           {view === "flashcards" ? (
-            <FlashcardsView key={`f${gen}`} cards={parseFlashcards(shown)} />
+            <FlashcardsView
+              key={`f${gen}`}
+              cards={parseFlashcards(shown)}
+              deckId={note.id}
+              deckName={note.title}
+              regenerating={pending === "flashcards"}
+              onRegenerate={() => run("flashcards")}
+            />
           ) : view === "quiz" ? (
             <QuizView
               key={`q${gen}`}
@@ -250,6 +261,7 @@ function NoteDetailPage() {
                 <>
                   {chart && <NoteChart spec={chart} />}
                   <Markdown>{markdown}</Markdown>
+                  <ExplainTools answer={markdown} question={`${viewLabel} of my note "${note.title}"`} />
                 </>
               );
             })()
@@ -258,6 +270,7 @@ function NoteDetailPage() {
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="mb-3 text-base font-bold">Cleaned notes</h2>
+          <ChapterPicker noteId={note.id} subjectId={note.subjectId} chapter={note.chapter} />
           <Markdown>{note.content}</Markdown>
         </section>
       )}
@@ -342,5 +355,43 @@ function NoteDetailPage() {
         </SheetContent>
       </Sheet>
     </AppShell>
+  );
+}
+
+
+/** Lets the student re-file a note under any chapter of its subject. */
+function ChapterPicker({
+  noteId,
+  subjectId,
+  chapter,
+}: {
+  noteId: string;
+  subjectId?: string;
+  chapter?: string;
+}) {
+  const subject = useStore((st) => st.subjects.find((x) => x.id === subjectId));
+  if (!subject) return null;
+  const options = chapterOptions(subject);
+  return (
+    <div className="mb-4">
+      <label
+        htmlFor="note-chapter"
+        className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted-foreground"
+      >
+        Chapter in {subject.name}
+      </label>
+      <select
+        id="note-chapter"
+        value={chapter ?? UNSORTED_CHAPTER}
+        onChange={(e) => noteActions.setChapter(noteId, e.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold outline-none focus:border-primary"
+      >
+        {options.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }

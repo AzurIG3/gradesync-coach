@@ -12,8 +12,12 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
-import { Plus, Trash2, ChevronRight, Circle, CircleDashed, CircleCheck, BookOpen, Video, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Plus, Trash2, ChevronRight, Circle, CircleDashed, CircleCheck, BookOpen, Video, ExternalLink, FileText, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CLASS_LEVELS, classLevelLabel, hasElearn, syllabusSubjects, UNSORTED_CHAPTER, type ClassLevel } from "@/lib/syllabus";
+import { CheatSheet } from "@/components/notes/CheatSheet";
+import { useNotes } from "@/lib/notes-store";
+import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/subjects")({
@@ -96,11 +100,13 @@ function AddSubjectButton() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
+  const [level, setLevel] = useState<ClassLevel>("matric");
+  const presets = useMemo(() => syllabusSubjects(level), [level]);
 
   const submit = () => {
     if (!name.trim() || !date) return;
-    actions.addSubject(name.trim(), date);
-    setName(""); setDate(""); setOpen(false);
+    actions.addSubject(name.trim(), date, level);
+    setName(""); setDate(""); setLevel("matric"); setOpen(false);
   };
 
   return (
@@ -116,8 +122,46 @@ function AddSubjectButton() {
         </DialogHeader>
         <div className="space-y-4">
           <div>
+            <Label className="mb-1.5 block">Class level</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {CLASS_LEVELS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setLevel(c.id)}
+                  className={cn(
+                    "rounded-xl border px-2 py-2.5 text-center text-xs font-bold transition",
+                    level === c.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  {c.short}
+                  <span className="mt-0.5 block text-[10px] font-semibold opacity-70">{c.grades}</span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              We'll auto-fill the official chapter list for this level where we have it.
+            </p>
+          </div>
+          <div>
             <Label htmlFor="s-name" className="mb-1.5 block">{t("subjectName")}</Label>
             <Input id="s-name" placeholder={t("subjectNamePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} className="h-12" />
+            {presets.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {presets.map((pName) => (
+                  <button
+                    key={pName}
+                    type="button"
+                    onClick={() => setName(pName)}
+                    className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground"
+                  >
+                    {pName}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div>
             <Label htmlFor="s-date" className="mb-1.5 block">{t("examDate")}</Label>
@@ -147,6 +191,19 @@ function SubjectSheet({ subject, children }: { subject: Subject; children: React
   const [topicName, setTopicName] = useState("");
   const [confirmDel, setConfirmDel] = useState(false);
   const sub = useStore((s) => s.subjects.find((x) => x.id === subject.id));
+  const allNotes = useNotes((s) => s);
+  const subjectNotes = useMemo(
+    () => allNotes.filter((n) => n.subjectId === subject.id),
+    [allNotes, subject.id],
+  );
+  const notesByChapter = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const n of subjectNotes) {
+      const key = n.chapter?.trim() || UNSORTED_CHAPTER;
+      map.set(key, [...(map.get(key) ?? []), n.title]);
+    }
+    return map;
+  }, [subjectNotes]);
   if (!sub) return <>{children}</>;
 
   const addTopic = () => {
@@ -169,7 +226,9 @@ function SubjectSheet({ subject, children }: { subject: Subject; children: React
             <span className="h-10 w-10 rounded-2xl" style={{ backgroundColor: sub.color }} />
             <div className="min-w-0">
               <SheetTitle className="truncate text-xl">{sub.name}</SheetTitle>
-              <p className="text-xs text-muted-foreground">{t("exam")}: {sub.examDate}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("exam")}: {sub.examDate} · {classLevelLabel(sub.classLevel ?? "matric")}
+              </p>
             </div>
           </div>
         </SheetHeader>
@@ -191,6 +250,14 @@ function SubjectSheet({ subject, children }: { subject: Subject; children: React
           {sub.topics.length === 0 && (
             <p className="mt-2 text-xs text-muted-foreground">{t("tapPlusForTopics")}</p>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 rounded-full text-xs text-muted-foreground"
+            onClick={() => actions.syncSyllabus(sub.id)}
+          >
+            <RefreshCw size={13} /> Load official chapters
+          </Button>
         </div>
 
         <ul className="mt-4 space-y-2">
@@ -211,6 +278,12 @@ function SubjectSheet({ subject, children }: { subject: Subject; children: React
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {tp.status === "not_started" ? t("notStarted") : tp.status === "in_progress" ? t("inProgress") : t("completed")}
+                  {(notesByChapter.get(tp.name)?.length ?? 0) > 0 ? (
+                    <span className="ml-1.5 inline-flex items-center gap-1 font-semibold text-primary">
+                      <FileText size={11} /> {notesByChapter.get(tp.name)!.length} note
+                      {notesByChapter.get(tp.name)!.length === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
                 </div>
               </div>
               <button
@@ -234,7 +307,7 @@ function SubjectSheet({ subject, children }: { subject: Subject; children: React
                 <ExternalLink size={16} className="text-muted-foreground" />
               </a>
             </Button>
-            {isScienceOrMath(sub.name) && (
+            {isScienceOrMath(sub.name) && hasElearn(sub.classLevel ?? "matric") && (
               <Button asChild variant="outline" className="h-auto min-h-12 w-full justify-start gap-3 whitespace-normal py-3">
                 <a href="https://elearn.punjab.gov.pk/" target="_blank" rel="noopener noreferrer">
                   <Video size={20} className="text-primary" />
@@ -246,6 +319,27 @@ function SubjectSheet({ subject, children }: { subject: Subject; children: React
           </div>
           <p className="mt-2 text-xs text-muted-foreground">{t("linkBackupNote")}</p>
         </div>
+
+        {(notesByChapter.get(UNSORTED_CHAPTER)?.length ?? 0) > 0 ? (
+          <div className="mt-6">
+            <p className="mb-2 text-sm font-semibold text-muted-foreground">Unsorted notes</p>
+            <ul className="space-y-1.5">
+              {notesByChapter.get(UNSORTED_CHAPTER)!.map((title, i) => (
+                <li key={i} className="rounded-xl border border-dashed border-border px-3 py-2 text-xs">
+                  {title}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Open a note to file it under a chapter.
+            </p>
+          </div>
+        ) : null}
+
+        <CheatSheet
+          subjectName={sub.name}
+          notes={subjectNotes.map((n) => ({ title: n.title, content: n.content }))}
+        />
 
         <div className="mt-6 border-t pt-4">
           {!confirmDel ? (

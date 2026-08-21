@@ -21,6 +21,8 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
 import { extractTextFromFile } from "@/lib/extract-text";
+import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
+import { autoFileNote } from "@/lib/note-filing";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
 import { useStore } from "@/lib/store";
 import { RenameIconButton } from "@/components/notes/EditableTitle";
@@ -154,6 +156,8 @@ function NotesPage() {
         subjectId: uploadSubject,
         fileSize: file.size,
       });
+      // File it under the best-matching syllabus chapter in the background.
+      void autoFileNote(id, res.text, subjects.find((sb) => sb.id === uploadSubject));
       router.navigate({ to: "/notes/$noteId", params: { noteId: id } });
     } catch (e) {
       console.error(e);
@@ -227,6 +231,25 @@ function NotesPage() {
           </span>
         )}
       </Button>
+      <div className="mt-3">
+        <VoiceNoteButton
+          disabled={busy}
+          onNote={async (text) => {
+            const stamp = new Date().toLocaleString(undefined, {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const id = noteActions.add(`Voice note — ${stamp}`, text, "Voice recording", {
+              subjectId: uploadSubject,
+            });
+            void autoFileNote(id, text, subjects.find((sb) => sb.id === uploadSubject));
+            router.navigate({ to: "/notes/$noteId", params: { noteId: id } });
+          }}
+        />
+      </div>
+
       <p className="mt-2 text-center text-xs text-muted-foreground">
         PDF, Word, Excel or a photo of your book page.
       </p>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { getUserApiKey, setUserApiKey } from "@/lib/ai-config";
 import { useTheme, type Theme } from "@/lib/theme";
+import { PALETTES, applyPalette, loadPaletteId, savePaletteId, type PaletteId } from "@/lib/palette";
 import {
   ALARM_OPTIONS,
   clearCustomAlarm,
@@ -50,6 +51,7 @@ function SettingsPage() {
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
   const [alarm, setAlarm] = useState<AlarmId>("chime");
+  const [palette, setPalette] = useState<PaletteId>("ocean");
   const [customName, setCustomName] = useState<string | null>(null);
   const [soundMsg, setSoundMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,6 +65,9 @@ function SettingsPage() {
   useEffect(() => {
     setKey(getUserApiKey());
     setAlarm(getAlarmSound());
+    const id = loadPaletteId();
+    setPalette(id);
+    applyPalette(id);
     void loadCustomAlarm().then((c) => setCustomName(c?.name ?? null));
   }, []);
 
@@ -104,6 +109,44 @@ function SettingsPage() {
                 >
                   <Icon size={20} />
                   {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mb-2 mt-5 text-sm font-semibold">Colour theme</p>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Pick an accent palette — it applies across every screen and tints your app icon.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {PALETTES.map((p) => {
+              const active = palette === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setPalette(p.id);
+                    savePaletteId(p.id);
+                  }}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-xs font-bold transition",
+                    active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <span className="flex shrink-0 gap-1">
+                    {p.swatch.map((c) => (
+                      <span
+                        key={c}
+                        className="h-5 w-5 rounded-full border border-black/10"
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </span>
+                  {p.label}
                 </button>
               );
             })}

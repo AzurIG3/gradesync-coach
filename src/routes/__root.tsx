@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider } from "@/lib/i18n";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme";
+import { PALETTE_INIT_SCRIPT, applyPalette, loadPaletteId } from "@/lib/palette";
 import { Onboarding } from "@/components/Onboarding";
 
 function NotFoundComponent() {
@@ -113,7 +114,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + PALETTE_INIT_SCRIPT }} />
       </head>
       <body>
         {children}
