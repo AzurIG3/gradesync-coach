@@ -231,6 +231,25 @@ function NotesPage() {
           </span>
         )}
       </Button>
+      <div className="mt-3">
+        <VoiceNoteButton
+          disabled={busy}
+          onNote={async (text) => {
+            const stamp = new Date().toLocaleString(undefined, {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const id = noteActions.add(`Voice note — ${stamp}`, text, "Voice recording", {
+              subjectId: uploadSubject,
+            });
+            void autoFileNote(id, text, subjects.find((sb) => sb.id === uploadSubject));
+            router.navigate({ to: "/notes/$noteId", params: { noteId: id } });
+          }}
+        />
+      </div>
+
       <p className="mt-2 text-center text-xs text-muted-foreground">
         PDF, Word, Excel or a photo of your book page.
       </p>
