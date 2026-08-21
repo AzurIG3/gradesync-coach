@@ -181,6 +181,14 @@ function AssistantPage() {
                 >
                   {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
                 </div>
+                {m.role === "assistant" && !loading && m.content.trim() ? (
+                  <div className="max-w-[95%]">
+                    <ExplainTools
+                      answer={m.content}
+                      question={messages[i - 1]?.role === "user" ? messages[i - 1]!.content : ""}
+                    />
+                  </div>
+                ) : null}
                 {m.role === "assistant" &&
                   i === messages.length - 1 &&
                   !loading &&
