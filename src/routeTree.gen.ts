@@ -18,6 +18,7 @@ import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NotesIndexRouteImport } from './routes/notes/index'
+import { Route as NotesWeakRouteImport } from './routes/notes/weak'
 import { Route as NotesTestRouteImport } from './routes/notes/test'
 import { Route as NotesNoteIdRouteImport } from './routes/notes/$noteId'
 
@@ -66,6 +67,11 @@ const NotesIndexRoute = NotesIndexRouteImport.update({
   path: '/notes/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotesWeakRoute = NotesWeakRouteImport.update({
+  id: '/notes/weak',
+  path: '/notes/weak',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotesTestRoute = NotesTestRouteImport.update({
   id: '/notes/test',
   path: '/notes/test',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/timer': typeof TimerRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/notes/test': typeof NotesTestRoute
+  '/notes/weak': typeof NotesWeakRoute
   '/notes/': typeof NotesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/timer': typeof TimerRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/notes/test': typeof NotesTestRoute
+  '/notes/weak': typeof NotesWeakRoute
   '/notes': typeof NotesIndexRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/timer': typeof TimerRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/notes/test': typeof NotesTestRoute
+  '/notes/weak': typeof NotesWeakRoute
   '/notes/': typeof NotesIndexRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/timer'
     | '/notes/$noteId'
     | '/notes/test'
+    | '/notes/weak'
     | '/notes/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/timer'
     | '/notes/$noteId'
     | '/notes/test'
+    | '/notes/weak'
     | '/notes'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/timer'
     | '/notes/$noteId'
     | '/notes/test'
+    | '/notes/weak'
     | '/notes/'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   TimerRoute: typeof TimerRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
   NotesTestRoute: typeof NotesTestRoute
+  NotesWeakRoute: typeof NotesWeakRoute
   NotesIndexRoute: typeof NotesIndexRoute
 }
 
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notes/weak': {
+      id: '/notes/weak'
+      path: '/notes/weak'
+      fullPath: '/notes/weak'
+      preLoaderRoute: typeof NotesWeakRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes/test': {
       id: '/notes/test'
       path: '/notes/test'
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   TimerRoute: TimerRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
   NotesTestRoute: NotesTestRoute,
+  NotesWeakRoute: NotesWeakRoute,
   NotesIndexRoute: NotesIndexRoute,
 }
 export const routeTree = rootRouteImport

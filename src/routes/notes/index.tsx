@@ -21,6 +21,8 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
 import { extractTextFromFile } from "@/lib/extract-text";
+import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
+import { autoFileNote } from "@/lib/note-filing";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
 import { useStore } from "@/lib/store";
 import { RenameIconButton } from "@/components/notes/EditableTitle";
@@ -154,6 +156,8 @@ function NotesPage() {
         subjectId: uploadSubject,
         fileSize: file.size,
       });
+      // File it under the best-matching syllabus chapter in the background.
+      void autoFileNote(id, res.text, subjects.find((sb) => sb.id === uploadSubject));
       router.navigate({ to: "/notes/$noteId", params: { noteId: id } });
     } catch (e) {
       console.error(e);
