@@ -138,7 +138,7 @@ function SettingsPage() {
                   )}
                 >
                   <span className="flex shrink-0 gap-1">
-                    {p.swatches.map((c) => (
+                    {p.swatch.map((c) => (
                       <span
                         key={c}
                         className="h-5 w-5 rounded-full border border-black/10"
