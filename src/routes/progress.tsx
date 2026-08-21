@@ -4,6 +4,9 @@ import { subjectProgress, useStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MasteryPanel } from "@/components/notes/MasteryPanel";
+import { StudyHeatmap } from "@/components/StudyHeatmap";
+import { Button } from "@/components/ui/button";
+import { Target } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
 
@@ -102,6 +105,18 @@ function ProgressPage() {
           })}
         </ul>
       )}
+
+      <div className="mt-6">
+        <StudyHeatmap />
+      </div>
+
+      <div className="mt-6">
+        <Button asChild size="lg" className="w-full rounded-2xl py-6 text-base font-bold">
+          <Link to="/notes/weak">
+            <Target size={20} /> Quiz my weak spots
+          </Link>
+        </Button>
+      </div>
 
       <MasteryPanel />
     </AppShell>
