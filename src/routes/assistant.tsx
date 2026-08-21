@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { askAssistant } from "@/lib/assistant.functions";
 import { getUserApiKey } from "@/lib/ai-config";
 import { Markdown } from "@/components/notes/Markdown";
+import { ExplainTools } from "@/components/notes/ExplainTools";
 import { useStore, daysBetween, todayISO } from "@/lib/store";
 import { useNotes } from "@/lib/notes-store";
 
