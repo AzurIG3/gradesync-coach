@@ -4,6 +4,7 @@ import { actions, useStore } from "@/lib/store";
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, BellOff, Volume2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { logSession } from "@/lib/sessions";
 import {
   ALARM_OPTIONS,
   loadCustomAlarm,
@@ -80,6 +81,8 @@ function TimerPage() {
         if (s > 1) return s - 1;
         // transition
         if (phase === "focus") {
+          // Record the completed focus session for the study history heatmap.
+          logSession("focus", focusMin);
           playAlarm(alarm);
           notifyAlways("Focus session done", "Time for a break.");
           totalRef.current = breakMin * 60;
