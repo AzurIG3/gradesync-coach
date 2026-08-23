@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarClock, Plus, Sparkles, BookOpen, Timer, Flame } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { DottedTrail } from "@/components/PathProgress";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,14 +59,15 @@ function Home() {
   return (
     <AppShell title={t("hello")} subtitle={mounted ? formatDateLong(today, locale) : undefined}>
       {streak > 0 && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-warning/20 px-4 py-1.5 text-sm font-bold text-foreground">
-          <Flame size={16} className="text-warning" />
+        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-gold/40 bg-gold/15 px-4 py-1.5 text-sm font-bold text-foreground">
+          <Flame size={16} className="text-gold" />
           {t("streak", { n: streak })}
+          <DottedTrail total={7} filled={Math.min(streak, 7)} />
         </div>
       )}
 
       {/* Exam countdown hero */}
-      <Card className="mb-4 overflow-hidden border-0 bg-gradient-to-br from-primary to-accent p-6 text-primary-foreground shadow-lg">
+      <Card className="journey-gradient mb-4 overflow-hidden border-0 p-6 text-primary-foreground shadow-lift">
         <div className="flex items-center gap-2 text-sm font-semibold opacity-90">
           <CalendarClock size={18} /> {t("nextExam")}
         </div>
