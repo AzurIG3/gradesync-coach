@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { subjectProgress, useStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { PathProgress } from "@/components/PathProgress";
 import { MasteryPanel } from "@/components/notes/MasteryPanel";
 import { StudyHeatmap } from "@/components/StudyHeatmap";
 import { Button } from "@/components/ui/button";
