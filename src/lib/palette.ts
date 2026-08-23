@@ -1,10 +1,12 @@
 /**
- * Colour theme presets.
+ * Coordinated colour theme presets.
  *
- * Light/dark mode stays in `theme.tsx`; this file only swaps the ACCENT
- * palette (primary / ring / accent / secondary) so both modes keep their
- * readable contrast. The values are written into a single <style> tag so
- * they override the defaults in styles.css without touching components.
+ * Light/dark mode lives in `theme.tsx`; this file swaps a FULL coordinated
+ * palette — background/parchment tint, surfaces, borders, primary, accent,
+ * gold marker, path colour and the hero gradient — so each theme speaks the
+ * same "journey to wisdom" design language rather than only swapping accents.
+ * Values are written into one <style> tag so they override styles.css without
+ * touching components.
  */
 
 export type PaletteId = "ocean" | "sunset" | "forest" | "purple";
@@ -20,103 +22,120 @@ export interface Palette {
   dark: Record<string, string>;
 }
 
+interface Recipe {
+  /** Primary hue (oklch) */
+  h: number;
+  /** Chroma for the primary */
+  c: number;
+  /** Neutral/parchment hue for light backgrounds */
+  paperH: number;
+  /** Grounding dark hue (navy/indigo/etc.) */
+  darkH: number;
+  /** Gold / warm marker hue */
+  goldH: number;
+}
+
+function light(r: Recipe): Record<string, string> {
+  return {
+    "--background": `oklch(0.973 0.014 ${r.paperH})`,
+    "--surface": `oklch(0.953 0.02 ${r.paperH})`,
+    "--foreground": `oklch(0.26 0.045 ${r.darkH})`,
+    "--card": `oklch(0.995 0.006 ${r.paperH})`,
+    "--card-foreground": `oklch(0.26 0.045 ${r.darkH})`,
+    "--popover": `oklch(0.995 0.006 ${r.paperH})`,
+    "--popover-foreground": `oklch(0.26 0.045 ${r.darkH})`,
+    "--primary": `oklch(0.6 ${r.c} ${r.h})`,
+    "--primary-foreground": `oklch(0.99 0.005 ${r.paperH})`,
+    "--secondary": `oklch(0.93 0.035 ${r.h})`,
+    "--secondary-foreground": `oklch(0.31 0.05 ${r.darkH})`,
+    "--muted": `oklch(0.945 0.016 ${r.h})`,
+    "--muted-foreground": `oklch(0.49 0.03 ${r.darkH})`,
+    "--accent": `oklch(0.88 0.06 ${r.h})`,
+    "--accent-foreground": `oklch(0.28 0.05 ${r.darkH})`,
+    "--gold": `oklch(0.79 0.12 ${r.goldH})`,
+    "--gold-foreground": `oklch(0.27 0.06 ${r.goldH})`,
+    "--deep": `oklch(0.26 0.06 ${r.darkH})`,
+    "--deep-foreground": `oklch(0.96 0.01 ${r.paperH})`,
+    "--path": `oklch(0.885 0.025 ${r.h})`,
+    "--border": `oklch(0.9 0.022 ${r.h})`,
+    "--input": `oklch(0.915 0.022 ${r.h})`,
+    "--ring": `oklch(0.6 ${r.c} ${r.h})`,
+    "--grad-from": `oklch(0.62 ${r.c} ${r.h})`,
+    "--grad-to": `oklch(0.79 0.11 ${r.goldH})`,
+    "--shadow-tint": `oklch(0.35 0.06 ${r.darkH} / 0.22)`,
+  };
+}
+
+function dark(r: Recipe): Record<string, string> {
+  return {
+    "--background": `oklch(0.185 0.035 ${r.darkH})`,
+    "--surface": `oklch(0.215 0.036 ${r.darkH})`,
+    "--foreground": `oklch(0.95 0.012 ${r.paperH})`,
+    "--card": `oklch(0.235 0.037 ${r.darkH})`,
+    "--card-foreground": `oklch(0.95 0.012 ${r.paperH})`,
+    "--popover": `oklch(0.235 0.037 ${r.darkH})`,
+    "--popover-foreground": `oklch(0.95 0.012 ${r.paperH})`,
+    "--primary": `oklch(0.73 ${Math.min(r.c + 0.01, 0.16)} ${r.h})`,
+    "--primary-foreground": `oklch(0.17 0.04 ${r.darkH})`,
+    "--secondary": `oklch(0.31 0.045 ${r.darkH})`,
+    "--secondary-foreground": `oklch(0.95 0.012 ${r.paperH})`,
+    "--muted": `oklch(0.275 0.035 ${r.darkH})`,
+    "--muted-foreground": `oklch(0.75 0.02 ${r.h})`,
+    "--accent": `oklch(0.38 0.06 ${r.h})`,
+    "--accent-foreground": `oklch(0.96 0.01 ${r.paperH})`,
+    "--gold": `oklch(0.82 0.13 ${r.goldH})`,
+    "--gold-foreground": `oklch(0.2 0.05 ${r.goldH})`,
+    "--deep": `oklch(0.15 0.035 ${r.darkH})`,
+    "--deep-foreground": `oklch(0.96 0.01 ${r.paperH})`,
+    "--path": `oklch(0.33 0.035 ${r.darkH})`,
+    "--border": `oklch(0.33 0.03 ${r.darkH})`,
+    "--input": `oklch(0.32 0.03 ${r.darkH})`,
+    "--ring": `oklch(0.73 ${r.c} ${r.h})`,
+    "--grad-from": `oklch(0.4 0.08 ${r.h})`,
+    "--grad-to": `oklch(0.55 0.09 ${r.goldH})`,
+    "--shadow-tint": "oklch(0 0 0 / 0.55)",
+  };
+}
+
+function build(
+  id: PaletteId,
+  label: string,
+  swatch: [string, string, string],
+  themeColor: string,
+  r: Recipe,
+): Palette {
+  return { id, label, swatch, themeColor, light: light(r), dark: dark(r) };
+}
+
 export const PALETTES: Palette[] = [
-  {
-    id: "ocean",
-    label: "Ocean",
-    swatch: ["#8fcadd", "#7ee0c0", "#2e5b7a"],
-    themeColor: "#8fcadd",
-    light: {
-      "--primary": "oklch(0.68 0.12 220)",
-      "--primary-foreground": "oklch(0.99 0 0)",
-      "--ring": "oklch(0.68 0.12 220)",
-      "--accent": "oklch(0.85 0.08 165)",
-      "--accent-foreground": "oklch(0.28 0.05 200)",
-      "--secondary": "oklch(0.93 0.05 175)",
-      "--secondary-foreground": "oklch(0.32 0.06 200)",
-    },
-    dark: {
-      "--primary": "oklch(0.75 0.13 220)",
-      "--primary-foreground": "oklch(0.17 0.03 250)",
-      "--ring": "oklch(0.75 0.13 220)",
-      "--accent": "oklch(0.38 0.07 190)",
-      "--accent-foreground": "oklch(0.96 0.01 200)",
-      "--secondary": "oklch(0.3 0.04 220)",
-      "--secondary-foreground": "oklch(0.95 0.01 220)",
-    },
-  },
-  {
-    id: "sunset",
-    label: "Sunset",
-    swatch: ["#f6a97a", "#f2748c", "#7a3b46"],
-    themeColor: "#f6a97a",
-    light: {
-      "--primary": "oklch(0.66 0.15 40)",
-      "--primary-foreground": "oklch(0.99 0 0)",
-      "--ring": "oklch(0.66 0.15 40)",
-      "--accent": "oklch(0.87 0.08 60)",
-      "--accent-foreground": "oklch(0.3 0.07 40)",
-      "--secondary": "oklch(0.94 0.05 55)",
-      "--secondary-foreground": "oklch(0.34 0.08 40)",
-    },
-    dark: {
-      "--primary": "oklch(0.74 0.14 45)",
-      "--primary-foreground": "oklch(0.18 0.04 40)",
-      "--ring": "oklch(0.74 0.14 45)",
-      "--accent": "oklch(0.4 0.08 40)",
-      "--accent-foreground": "oklch(0.96 0.02 60)",
-      "--secondary": "oklch(0.32 0.05 40)",
-      "--secondary-foreground": "oklch(0.95 0.01 60)",
-    },
-  },
-  {
-    id: "forest",
-    label: "Forest",
-    swatch: ["#7cc79a", "#3f8f6b", "#22402f"],
-    themeColor: "#7cc79a",
-    light: {
-      "--primary": "oklch(0.6 0.12 155)",
-      "--primary-foreground": "oklch(0.99 0 0)",
-      "--ring": "oklch(0.6 0.12 155)",
-      "--accent": "oklch(0.86 0.08 145)",
-      "--accent-foreground": "oklch(0.28 0.06 155)",
-      "--secondary": "oklch(0.93 0.05 150)",
-      "--secondary-foreground": "oklch(0.3 0.06 155)",
-    },
-    dark: {
-      "--primary": "oklch(0.72 0.13 155)",
-      "--primary-foreground": "oklch(0.16 0.03 155)",
-      "--ring": "oklch(0.72 0.13 155)",
-      "--accent": "oklch(0.38 0.07 155)",
-      "--accent-foreground": "oklch(0.96 0.01 150)",
-      "--secondary": "oklch(0.3 0.04 155)",
-      "--secondary-foreground": "oklch(0.95 0.01 150)",
-    },
-  },
-  {
-    id: "purple",
-    label: "Midnight Purple",
-    swatch: ["#b39dfa", "#7c5ce0", "#2c2350"],
-    themeColor: "#b39dfa",
-    light: {
-      "--primary": "oklch(0.58 0.17 300)",
-      "--primary-foreground": "oklch(0.99 0 0)",
-      "--ring": "oklch(0.58 0.17 300)",
-      "--accent": "oklch(0.86 0.07 305)",
-      "--accent-foreground": "oklch(0.3 0.08 300)",
-      "--secondary": "oklch(0.93 0.05 300)",
-      "--secondary-foreground": "oklch(0.32 0.08 300)",
-    },
-    dark: {
-      "--primary": "oklch(0.72 0.15 300)",
-      "--primary-foreground": "oklch(0.17 0.04 300)",
-      "--ring": "oklch(0.72 0.15 300)",
-      "--accent": "oklch(0.4 0.09 300)",
-      "--accent-foreground": "oklch(0.96 0.01 300)",
-      "--secondary": "oklch(0.32 0.06 300)",
-      "--secondary-foreground": "oklch(0.95 0.01 300)",
-    },
-  },
+  build("ocean", "Ocean", ["#7fb0e0", "#e2b869", "#1e2a4a"], "#7fb0e0", {
+    h: 240,
+    c: 0.11,
+    paperH: 88,
+    darkH: 265,
+    goldH: 84,
+  }),
+  build("sunset", "Sunset", ["#f0a071", "#e8788c", "#4a2230"], "#f0a071", {
+    h: 38,
+    c: 0.14,
+    paperH: 70,
+    darkH: 20,
+    goldH: 62,
+  }),
+  build("forest", "Forest", ["#79bd94", "#d8bd74", "#1f3529"], "#79bd94", {
+    h: 155,
+    c: 0.11,
+    paperH: 95,
+    darkH: 165,
+    goldH: 90,
+  }),
+  build("purple", "Midnight Purple", ["#a892f0", "#e0b877", "#241d45"], "#a892f0", {
+    h: 300,
+    c: 0.15,
+    paperH: 80,
+    darkH: 295,
+    goldH: 78,
+  }),
 ];
 
 export const PALETTE_STORAGE_KEY = "sophia.palette.v1";
