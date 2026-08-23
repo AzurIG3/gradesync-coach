@@ -38,7 +38,7 @@ export function AppShell({
 }) {
   const { t } = useT();
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background bg-[radial-gradient(120%_60%_at_50%_-10%,var(--surface),transparent_70%)] pb-28">
       <div className="mx-auto max-w-md px-5 pt-8">
         <header className="mb-6 flex items-start justify-between gap-3">
           <div className="min-w-0">
