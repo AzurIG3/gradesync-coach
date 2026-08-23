@@ -87,7 +87,7 @@ function Home() {
             <p className="text-base opacity-95">{t("noExamsYet")}</p>
             <Link
               to="/subjects"
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-bold backdrop-blur hover:bg-white/30"
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary-foreground/20 px-4 py-2 text-sm font-bold backdrop-blur hover:bg-primary-foreground/30"
             >
               <Plus size={18} /> {t("addSubjectAction")}
             </Link>
@@ -119,7 +119,7 @@ function Home() {
 
       {/* Today's tasks */}
       <section className="mb-4">
-        <h2 className="mb-3 text-lg font-bold">{t("todaysTasks")}</h2>
+        <h2 className="mb-3 font-display text-xl font-semibold">{t("todaysTasks")}</h2>
         {todaysTasks.length === 0 ? (
           <Card className="border-dashed bg-muted/40 p-6 text-center">
             <p className="text-sm text-muted-foreground">{t("noTasksToday")}</p>
@@ -160,9 +160,9 @@ function Home() {
       </section>
 
       {/* Quote */}
-      <Card className="border-0 bg-secondary p-5">
+      <Card className="border-0 bg-gradient-to-br from-secondary to-accent/60 p-5 shadow-soft">
         <div className="flex items-start gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/70">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-card/70">
             <BookOpen size={20} className="text-secondary-foreground" />
           </div>
           <p className="text-sm font-medium leading-relaxed text-secondary-foreground">"{quote}"</p>
