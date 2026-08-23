@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarClock, Plus, Sparkles, BookOpen, Timer, Flame } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { DottedTrail } from "@/components/PathProgress";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,14 +59,15 @@ function Home() {
   return (
     <AppShell title={t("hello")} subtitle={mounted ? formatDateLong(today, locale) : undefined}>
       {streak > 0 && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-warning/20 px-4 py-1.5 text-sm font-bold text-foreground">
-          <Flame size={16} className="text-warning" />
+        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-gold/40 bg-gold/15 px-4 py-1.5 text-sm font-bold text-foreground">
+          <Flame size={16} className="text-gold" />
           {t("streak", { n: streak })}
+          <DottedTrail total={7} filled={Math.min(streak, 7)} />
         </div>
       )}
 
       {/* Exam countdown hero */}
-      <Card className="mb-4 overflow-hidden border-0 bg-gradient-to-br from-primary to-accent p-6 text-primary-foreground shadow-lg">
+      <Card className="journey-gradient mb-4 overflow-hidden border-0 p-6 text-primary-foreground shadow-lift">
         <div className="flex items-center gap-2 text-sm font-semibold opacity-90">
           <CalendarClock size={18} /> {t("nextExam")}
         </div>
@@ -85,7 +87,7 @@ function Home() {
             <p className="text-base opacity-95">{t("noExamsYet")}</p>
             <Link
               to="/subjects"
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-bold backdrop-blur hover:bg-white/30"
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary-foreground/20 px-4 py-2 text-sm font-bold backdrop-blur hover:bg-primary-foreground/30"
             >
               <Plus size={18} /> {t("addSubjectAction")}
             </Link>
@@ -117,7 +119,7 @@ function Home() {
 
       {/* Today's tasks */}
       <section className="mb-4">
-        <h2 className="mb-3 text-lg font-bold">{t("todaysTasks")}</h2>
+        <h2 className="mb-3 font-display text-xl font-semibold">{t("todaysTasks")}</h2>
         {todaysTasks.length === 0 ? (
           <Card className="border-dashed bg-muted/40 p-6 text-center">
             <p className="text-sm text-muted-foreground">{t("noTasksToday")}</p>
@@ -158,9 +160,9 @@ function Home() {
       </section>
 
       {/* Quote */}
-      <Card className="border-0 bg-secondary p-5">
+      <Card className="border-0 bg-gradient-to-br from-secondary to-accent/60 p-5 shadow-soft">
         <div className="flex items-start gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/70">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-card/70">
             <BookOpen size={20} className="text-secondary-foreground" />
           </div>
           <p className="text-sm font-medium leading-relaxed text-secondary-foreground">"{quote}"</p>

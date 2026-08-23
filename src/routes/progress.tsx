@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { subjectProgress, useStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { PathProgress } from "@/components/PathProgress";
 import { MasteryPanel } from "@/components/notes/MasteryPanel";
 import { StudyHeatmap } from "@/components/StudyHeatmap";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ function ProgressPage() {
 
   return (
     <AppShell title={t("progressTitle")} subtitle={t("progressSubtitle")}>
-      <Card className="mb-6 flex flex-col items-center bg-gradient-to-br from-secondary to-accent p-6">
+      <Card className="mb-6 flex flex-col items-center border-0 bg-gradient-to-br from-secondary via-secondary to-accent p-6 shadow-soft">
         <div className="relative" style={{ width: size, height: size }}>
           <svg width={size} height={size} className="-rotate-90">
             <circle cx={size / 2} cy={size / 2} r={r} strokeWidth={stroke} fill="none" stroke="rgba(255,255,255,0.5)" />
@@ -85,12 +85,12 @@ function ProgressPage() {
             const done = sub.topics.filter((tp) => tp.status === "completed").length;
             return (
               <li key={sub.id}>
-                <Card className="p-4">
+                <Card className="p-4 shadow-soft">
                   <div className="flex items-center gap-3">
                     <span className="h-10 w-10 shrink-0 rounded-2xl" style={{ backgroundColor: sub.color }} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="truncate font-bold">{sub.name}</div>
+                        <div className="truncate font-semibold">{sub.name}</div>
                         <div className="shrink-0 text-sm font-bold text-muted-foreground">{pct}%</div>
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -98,7 +98,8 @@ function ProgressPage() {
                       </div>
                     </div>
                   </div>
-                  <Progress value={pct} className="mt-3 h-2.5" />
+                  {/* Journey motif: the subject's path fills in as topics complete */}
+                  <PathProgress value={pct} color={sub.color} className="mt-2" />
                 </Card>
               </li>
             );

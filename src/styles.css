@@ -34,65 +34,93 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
-  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  /* Journey identity: gold marker + deep grounding tone */
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-deep: var(--deep);
+  --color-deep-foreground: var(--deep-foreground);
+  --color-surface: var(--surface);
+  --color-path: var(--path);
+
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -12px var(--shadow-tint);
+  --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.05), 0 18px 40px -18px var(--shadow-tint);
 }
 
 :root {
-  --radius: 1rem;
-  /* Soft, calming palette — sky blue + mint green on warm off-white */
-  --background: oklch(0.985 0.008 200);
-  --foreground: oklch(0.28 0.04 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.28 0.04 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.28 0.04 240);
-  --primary: oklch(0.68 0.12 220);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.93 0.05 175);
-  --secondary-foreground: oklch(0.32 0.06 200);
-  --muted: oklch(0.955 0.012 220);
-  --muted-foreground: oklch(0.5 0.03 240);
-  --accent: oklch(0.85 0.08 165);
-  --accent-foreground: oklch(0.28 0.05 200);
-  --success: oklch(0.72 0.13 160);
+  --radius: 1.1rem;
+  /* Sophia Odyssey core: soft compass blue + warm gold on parchment */
+  --background: oklch(0.973 0.014 88);
+  --surface: oklch(0.955 0.018 88);
+  --foreground: oklch(0.26 0.045 258);
+  --card: oklch(0.995 0.006 88);
+  --card-foreground: oklch(0.26 0.045 258);
+  --popover: oklch(0.995 0.006 88);
+  --popover-foreground: oklch(0.26 0.045 258);
+  --primary: oklch(0.6 0.11 240);
+  --primary-foreground: oklch(0.99 0.005 88);
+  --secondary: oklch(0.93 0.032 235);
+  --secondary-foreground: oklch(0.31 0.05 250);
+  --muted: oklch(0.945 0.016 245);
+  --muted-foreground: oklch(0.49 0.03 252);
+  --accent: oklch(0.88 0.06 210);
+  --accent-foreground: oklch(0.28 0.05 250);
+  --gold: oklch(0.79 0.12 82);
+  --gold-foreground: oklch(0.27 0.06 70);
+  --deep: oklch(0.26 0.06 262);
+  --deep-foreground: oklch(0.96 0.01 88);
+  --path: oklch(0.88 0.022 250);
+  --success: oklch(0.68 0.13 158);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.82 0.14 75);
+  --warning: oklch(0.81 0.13 78);
   --warning-foreground: oklch(0.28 0.05 60);
-  --destructive: oklch(0.65 0.2 25);
+  --destructive: oklch(0.6 0.19 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.02 220);
-  --input: oklch(0.92 0.02 220);
-  --ring: oklch(0.68 0.12 220);
+  --border: oklch(0.9 0.02 250);
+  --input: oklch(0.915 0.02 250);
+  --ring: oklch(0.6 0.11 240);
+  --grad-from: oklch(0.62 0.11 245);
+  --grad-to: oklch(0.79 0.11 88);
+  --shadow-tint: oklch(0.35 0.06 258 / 0.22);
 }
 
 .dark {
-  /* Soft dark navy/slate palette — never pure black */
-  --background: oklch(0.19 0.02 250);
-  --foreground: oklch(0.95 0.01 220);
-  --card: oklch(0.235 0.022 250);
-  --card-foreground: oklch(0.95 0.01 220);
-  --popover: oklch(0.235 0.022 250);
-  --popover-foreground: oklch(0.95 0.01 220);
-  --primary: oklch(0.75 0.13 220);
-  --primary-foreground: oklch(0.17 0.03 250);
-  --secondary: oklch(0.3 0.04 220);
-  --secondary-foreground: oklch(0.95 0.01 220);
-  --muted: oklch(0.28 0.02 250);
-  --muted-foreground: oklch(0.72 0.02 230);
-  --accent: oklch(0.38 0.07 190);
-  --accent-foreground: oklch(0.96 0.01 200);
+  /* Rich navy/indigo grounding — never pure black */
+  --background: oklch(0.185 0.035 265);
+  --surface: oklch(0.215 0.036 265);
+  --foreground: oklch(0.95 0.012 88);
+  --card: oklch(0.235 0.037 265);
+  --card-foreground: oklch(0.95 0.012 88);
+  --popover: oklch(0.235 0.037 265);
+  --popover-foreground: oklch(0.95 0.012 88);
+  --primary: oklch(0.72 0.11 240);
+  --primary-foreground: oklch(0.17 0.04 265);
+  --secondary: oklch(0.31 0.045 262);
+  --secondary-foreground: oklch(0.95 0.012 88);
+  --muted: oklch(0.275 0.035 265);
+  --muted-foreground: oklch(0.75 0.02 250);
+  --accent: oklch(0.38 0.06 240);
+  --accent-foreground: oklch(0.96 0.01 88);
+  --gold: oklch(0.82 0.13 85);
+  --gold-foreground: oklch(0.2 0.05 70);
+  --deep: oklch(0.15 0.035 265);
+  --deep-foreground: oklch(0.96 0.01 88);
+  --path: oklch(0.33 0.035 262);
   --success: oklch(0.72 0.14 160);
-  --success-foreground: oklch(0.15 0.03 220);
-  --warning: oklch(0.8 0.14 75);
+  --success-foreground: oklch(0.16 0.03 220);
+  --warning: oklch(0.8 0.14 78);
   --warning-foreground: oklch(0.2 0.05 60);
   --destructive: oklch(0.62 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.33 0.02 245);
-  --input: oklch(0.32 0.02 245);
-  --ring: oklch(0.75 0.13 220);
+  --border: oklch(0.33 0.03 262);
+  --input: oklch(0.32 0.03 262);
+  --ring: oklch(0.72 0.11 240);
+  --grad-from: oklch(0.4 0.08 262);
+  --grad-to: oklch(0.55 0.09 88);
+  --shadow-tint: oklch(0 0 0 / 0.55);
 }
-
-
 
 @layer base {
   * {
@@ -104,4 +132,20 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-variation-settings: "SOFT" 0, "WONK" 0;
+    letter-spacing: -0.015em;
+  }
+}
+
+@utility surface-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -14px var(--shadow-tint);
+}
+
+/* Gentle identity gradient for hero/key cards */
+@utility journey-gradient {
+  background-image: linear-gradient(135deg, var(--grad-from) 0%, color-mix(in oklch, var(--grad-from), var(--grad-to) 55%) 60%, var(--grad-to) 100%);
 }

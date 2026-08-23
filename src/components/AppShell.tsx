@@ -38,11 +38,13 @@ export function AppShell({
 }) {
   const { t } = useT();
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background bg-[radial-gradient(120%_60%_at_50%_-10%,var(--surface),transparent_70%)] pb-28">
       <div className="mx-auto max-w-md px-5 pt-8">
         <header className="mb-6 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-3xl font-extrabold tracking-tight">{title}</h1>
+            <h1 className="truncate font-display text-[1.9rem] font-semibold leading-tight tracking-tight">
+              {title}
+            </h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-2">
