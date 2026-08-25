@@ -20,7 +20,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
-import { extractTextFromFile } from "@/lib/extract-text";
+import { extractTextFromFiles } from "@/lib/extract-text";
 import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
 import { autoFileNote } from "@/lib/note-filing";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
@@ -181,9 +181,10 @@ function NotesPage() {
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,image/*"
         className="hidden"
-        onChange={(e) => onPick(e.target.files?.[0])}
+        onChange={(e) => onPick(e.target.files)}
       />
 
       <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
@@ -235,7 +236,7 @@ function NotesPage() {
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <Upload size={20} /> Upload a file
+            <Upload size={20} /> Upload file(s)
           </span>
         )}
       </Button>
@@ -259,7 +260,7 @@ function NotesPage() {
       </div>
 
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        PDF, Word, Excel or a photo of your book page.
+        PDF, Word, Excel or photos — pick several to combine them into one note.
       </p>
 
       {error && (
