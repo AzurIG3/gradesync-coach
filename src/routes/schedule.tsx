@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Clock, CalendarDays } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { TrailSpine } from "@/components/PathProgress";
 
 export const Route = createFileRoute("/schedule")({
   head: () => ({
@@ -93,9 +94,14 @@ function SchedulePage() {
       ) : (
         <div className="space-y-5">
           {[...grouped.entries()].map(([date, items]) => (
-            <section key={date}>
+            <section key={date} className="flex gap-3">
+              {/* Journey motif: a dotted trail runs down the timeline */}
+              <TrailSpine active={date === today} />
+              <div className="min-w-0 flex-1">
               <div className="mb-2 flex items-baseline justify-between">
-                <h2 className="font-bold">{date === today ? t("today") : formatDateLong(date, locale)}</h2>
+                <h2 className="font-display text-lg font-semibold">
+                  {date === today ? t("today") : formatDateLong(date, locale)}
+                </h2>
                 <span className="text-xs text-muted-foreground">
                   {t("doneOfTotal", { done: items.filter((i) => i.done).length, total: items.length })}
                 </span>
@@ -107,7 +113,7 @@ function SchedulePage() {
                   if (!sub || !topic) return null;
                   return (
                     <li key={tk.id}>
-                      <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+                      <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft">
                         <Checkbox
                           checked={tk.done}
                           onCheckedChange={() => actions.toggleTask(tk.id)}
@@ -125,6 +131,7 @@ function SchedulePage() {
                   );
                 })}
               </ul>
+              </div>
             </section>
           ))}
         </div>
