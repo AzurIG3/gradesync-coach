@@ -137,3 +137,31 @@ export async function extractTextFromFile(file: File, apiKey: string): Promise<E
   }
   return { ok: true, text };
 }
+
+/**
+ * Multi-file upload: extracts raw text from every file in the order given,
+ * joins them with a small heading per file, then runs a single AI cleanup pass
+ * over the combined text so the result is one unified note.
+ */
+export async function extractTextFromFiles(files: File[], apiKey: string): Promise<ExtractResult> {
+  if (files.length === 0) return { ok: false, kind: "error", message: "No files selected." };
+  if (files.length === 1) return extractTextFromFile(files[0], apiKey);
+
+  const parts: string[] = [];
+  let allStructured = true;
+  for (const file of files) {
+    const res = await extractRawTextFromFile(file, apiKey);
+    if (!res.ok) return res;
+    const text = res.text.trim();
+    if (!text) continue;
+    if (!XLSX.test(file.name)) allStructured = false;
+    parts.push(`## ${file.name.replace(/\.[^.]+$/, "")}\n\n${text}`);
+  }
+
+  const combined = parts.join("\n\n").trim();
+  if (!combined) {
+    return { ok: false, kind: "error", message: "We couldn't find any readable text in those files." };
+  }
+  if (allStructured) return { ok: true, text: combined };
+  return { ok: true, text: await cleanRawText(combined, apiKey) };
+}
