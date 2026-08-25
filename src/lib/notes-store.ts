@@ -80,6 +80,11 @@ export const noteActions = {
     persist();
     return id;
   },
+  /** Replaces the cleaned note content (manual edit). */
+  setContent(id: string, content: string) {
+    notes = notes.map((n) => (n.id === id ? { ...n, content } : n));
+    persist();
+  },
   setChapter(id: string, chapter: string) {
     notes = notes.map((n) => (n.id === id ? { ...n, chapter: chapter || undefined } : n));
     persist();

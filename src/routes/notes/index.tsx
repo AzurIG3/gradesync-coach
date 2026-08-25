@@ -20,7 +20,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
-import { extractTextFromFile } from "@/lib/extract-text";
+import { extractTextFromFiles } from "@/lib/extract-text";
 import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
 import { autoFileNote } from "@/lib/note-filing";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
@@ -138,12 +138,13 @@ function NotesPage() {
     navigate({ to: "/notes/test", search: { ids: ordered.join(",") } });
   }
 
-  async function onPick(file: File | undefined) {
-    if (!file || busy) return;
+  async function onPick(picked: FileList | null) {
+    const files = picked ? Array.from(picked) : [];
+    if (files.length === 0 || busy) return;
     setError(null);
     setBusy(true);
     try {
-      const res = await extractTextFromFile(file, getUserApiKey());
+      const res = await extractTextFromFiles(files, getUserApiKey());
       if (!res.ok) {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
@@ -152,9 +153,16 @@ function NotesPage() {
         setError({ message: "We couldn't find any readable text in that file.", keyIssue: false });
         return;
       }
-      const id = noteActions.add(file.name.replace(/\.[^.]+$/, ""), res.text, file.name, {
+      const first = files[0];
+      const title =
+        files.length === 1
+          ? first.name.replace(/\.[^.]+$/, "")
+          : `${first.name.replace(/\.[^.]+$/, "")} + ${files.length - 1} more`;
+      const fileName =
+        files.length === 1 ? first.name : `${files.length} files`;
+      const id = noteActions.add(title, res.text, fileName, {
         subjectId: uploadSubject,
-        fileSize: file.size,
+        fileSize: files.reduce((sum, f) => sum + f.size, 0),
       });
       // File it under the best-matching syllabus chapter in the background.
       void autoFileNote(id, res.text, subjects.find((sb) => sb.id === uploadSubject));
@@ -173,9 +181,10 @@ function NotesPage() {
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,image/*"
         className="hidden"
-        onChange={(e) => onPick(e.target.files?.[0])}
+        onChange={(e) => onPick(e.target.files)}
       />
 
       <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
@@ -227,7 +236,7 @@ function NotesPage() {
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <Upload size={20} /> Upload a file
+            <Upload size={20} /> Upload file(s)
           </span>
         )}
       </Button>
@@ -251,7 +260,7 @@ function NotesPage() {
       </div>
 
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        PDF, Word, Excel or a photo of your book page.
+        PDF, Word, Excel or photos — pick several to combine them into one note.
       </p>
 
       {error && (
