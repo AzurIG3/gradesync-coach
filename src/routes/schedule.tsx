@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Clock, CalendarDays } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { TrailSpine } from "@/components/PathProgress";
 
 export const Route = createFileRoute("/schedule")({
   head: () => ({
@@ -130,6 +131,7 @@ function SchedulePage() {
                   );
                 })}
               </ul>
+              </div>
             </section>
           ))}
         </div>
