@@ -11,6 +11,7 @@ import {
   Layers,
   HelpCircle,
   MessageCircle,
+  Pencil,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
 import { NoteChat } from "@/components/notes/NoteChat";
 import { EditableTitle } from "@/components/notes/EditableTitle";
+import { NoteEditor } from "@/components/notes/NoteEditor";
 import { ExplainTools } from "@/components/notes/ExplainTools";
 import { chapterOptions } from "@/lib/note-filing";
 import { useStore } from "@/lib/store";
@@ -91,6 +93,7 @@ function NoteDetailPage() {
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [gen, setGen] = useState(0);
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  const [editing, setEditing] = useState(false);
 
   const masteryScope = `note:${noteId}`;
 
@@ -227,11 +230,41 @@ function NoteDetailPage() {
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold">{viewLabel}</h2>
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setView(null)}>
-              <ArrowLeft size={16} /> Back to note
-            </Button>
+            <div className="flex items-center gap-2">
+              {(view === "summary" || view === "details") && !editing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => setEditing(true)}
+                >
+                  <Pencil size={15} /> Edit
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+                onClick={() => {
+                  setEditing(false);
+                  setView(null);
+                }}
+              >
+                <ArrowLeft size={16} /> Back to note
+              </Button>
+            </div>
           </div>
-          {view === "flashcards" ? (
+          {editing && (view === "summary" || view === "details") ? (
+            <NoteEditor
+              value={shown}
+              label={`Edit ${viewLabel}`}
+              onCancel={() => setEditing(false)}
+              onSave={(next) => {
+                noteActions.setOutput(note.id, view, next);
+                setEditing(false);
+              }}
+            />
+          ) : view === "flashcards" ? (
             <FlashcardsView
               key={`f${gen}`}
               cards={parseFlashcards(shown)}
@@ -269,9 +302,33 @@ function NoteDetailPage() {
         </section>
       ) : (
         <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-3 text-base font-bold">Cleaned notes</h2>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold">Cleaned notes</h2>
+            {!editing && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+                onClick={() => setEditing(true)}
+              >
+                <Pencil size={15} /> Edit
+              </Button>
+            )}
+          </div>
           <ChapterPicker noteId={note.id} subjectId={note.subjectId} chapter={note.chapter} />
-          <Markdown>{note.content}</Markdown>
+          {editing ? (
+            <NoteEditor
+              value={note.content}
+              label="Edit cleaned notes"
+              onCancel={() => setEditing(false)}
+              onSave={(next) => {
+                noteActions.setContent(note.id, next);
+                setEditing(false);
+              }}
+            />
+          ) : (
+            <Markdown>{note.content}</Markdown>
+          )}
         </section>
       )}
 
