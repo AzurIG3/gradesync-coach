@@ -138,12 +138,13 @@ function NotesPage() {
     navigate({ to: "/notes/test", search: { ids: ordered.join(",") } });
   }
 
-  async function onPick(file: File | undefined) {
-    if (!file || busy) return;
+  async function onPick(picked: FileList | null) {
+    const files = picked ? Array.from(picked) : [];
+    if (files.length === 0 || busy) return;
     setError(null);
     setBusy(true);
     try {
-      const res = await extractTextFromFile(file, getUserApiKey());
+      const res = await extractTextFromFiles(files, getUserApiKey());
       if (!res.ok) {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
@@ -152,9 +153,16 @@ function NotesPage() {
         setError({ message: "We couldn't find any readable text in that file.", keyIssue: false });
         return;
       }
-      const id = noteActions.add(file.name.replace(/\.[^.]+$/, ""), res.text, file.name, {
+      const first = files[0];
+      const title =
+        files.length === 1
+          ? first.name.replace(/\.[^.]+$/, "")
+          : `${first.name.replace(/\.[^.]+$/, "")} + ${files.length - 1} more`;
+      const fileName =
+        files.length === 1 ? first.name : `${files.length} files`;
+      const id = noteActions.add(title, res.text, fileName, {
         subjectId: uploadSubject,
-        fileSize: file.size,
+        fileSize: files.reduce((sum, f) => sum + f.size, 0),
       });
       // File it under the best-matching syllabus chapter in the background.
       void autoFileNote(id, res.text, subjects.find((sb) => sb.id === uploadSubject));
