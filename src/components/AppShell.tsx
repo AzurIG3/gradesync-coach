@@ -61,6 +61,7 @@ export function AppShell({
           </div>
         </header>
 
+        <OfflineBanner />
         {children}
       </div>
       {!hideAssistantFab && <AssistantFab />}
