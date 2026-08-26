@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { PathProgress } from "@/components/PathProgress";
 import { MasteryPanel } from "@/components/notes/MasteryPanel";
 import { StudyHeatmap } from "@/components/StudyHeatmap";
+import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { Button } from "@/components/ui/button";
 import { Target } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -106,6 +107,10 @@ function ProgressPage() {
           })}
         </ul>
       )}
+
+      <div className="mt-6">
+        <WeeklyInsights />
+      </div>
 
       <div className="mt-6">
         <StudyHeatmap />

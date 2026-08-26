@@ -4,6 +4,7 @@ import { Moon, Settings, Sun } from "lucide-react";
 import { BottomNav } from "./BottomNav";
 import { AssistantFab } from "./AssistantFab";
 import { LanguageToggle } from "./LanguageToggle";
+import { OfflineBanner } from "./OfflineBanner";
 import { useT } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 
@@ -61,6 +62,7 @@ export function AppShell({
           </div>
         </header>
 
+        <OfflineBanner />
         {children}
       </div>
       {!hideAssistantFab && <AssistantFab />}
