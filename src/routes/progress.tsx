@@ -108,6 +108,10 @@ function ProgressPage() {
       )}
 
       <div className="mt-6">
+        <WeeklyInsights />
+      </div>
+
+      <div className="mt-6">
         <StudyHeatmap />
       </div>
 
