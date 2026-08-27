@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarClock, Plus, Sparkles, BookOpen, Timer, Flame } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { DottedTrail } from "@/components/PathProgress";
+import { WeeklyInsights } from "@/components/WeeklyInsights";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -158,6 +159,10 @@ function Home() {
           </ul>
         )}
       </section>
+
+      <div className="mb-4">
+        <WeeklyInsights compact />
+      </div>
 
       {/* Quote */}
       <Card className="border-0 bg-gradient-to-br from-secondary to-accent/60 p-5 shadow-soft">

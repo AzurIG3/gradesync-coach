@@ -17,6 +17,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Markdown } from "@/components/notes/Markdown";
+import { HighlightableNote } from "@/components/notes/HighlightableNote";
 import { FlashcardsView } from "@/components/notes/FlashcardsView";
 import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
@@ -327,7 +328,7 @@ function NoteDetailPage() {
               }}
             />
           ) : (
-            <Markdown>{note.content}</Markdown>
+            <HighlightableNote noteId={note.id} content={note.content} />
           )}
         </section>
       )}
