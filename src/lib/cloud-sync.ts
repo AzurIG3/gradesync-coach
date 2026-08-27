@@ -10,6 +10,7 @@ const STORAGE_KEYS: Record<SyncDataKey, string> = {
   mastery: "sophia.mastery.v1",
   sessions: "sophia.sessions.v1",
 };
+const OWNER_KEY = "sophia.sync.owner";
 
 let activeUserId: string | null = null;
 let anonymousSnapshot: Partial<Record<SyncDataKey, unknown>> | null = null;
@@ -22,6 +23,10 @@ function readLocal(key: SyncDataKey): unknown {
   } catch {
     return key === "notes" || key === "sessions" ? [] : {};
   }
+}
+
+function emptyPayload(key: SyncDataKey): unknown {
+  return key === "notes" || key === "sessions" ? [] : {};
 }
 
 function applyLocal(key: SyncDataKey, payload: unknown) {
@@ -50,10 +55,13 @@ function scheduleUpload(key: SyncDataKey, payload: unknown) {
 
 export async function initializeAccountSync(userId: string) {
   if (!activeUserId) {
-    anonymousSnapshot = Object.fromEntries(
-      (Object.keys(STORAGE_KEYS) as SyncDataKey[]).map((key) => [key, readLocal(key)]),
-    );
+    const previousOwner = window.localStorage.getItem(OWNER_KEY);
+    anonymousSnapshot = Object.fromEntries((Object.keys(STORAGE_KEYS) as SyncDataKey[]).map((key) => [
+      key,
+      previousOwner ? emptyPayload(key) : readLocal(key),
+    ]));
   }
+  window.localStorage.setItem(OWNER_KEY, userId);
   activeUserId = userId;
   registerSyncWriter(scheduleUpload);
   const { data, error } = await supabase
@@ -81,4 +89,5 @@ export function stopAccountSync(restoreAnonymous = false) {
     }
     anonymousSnapshot = null;
   }
+  if (restoreAnonymous) window.localStorage.removeItem(OWNER_KEY);
 }
