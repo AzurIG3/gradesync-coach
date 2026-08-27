@@ -69,6 +69,7 @@ function NotesPage() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [uploadSubject, setUploadSubject] = useState("");
 
@@ -158,8 +159,18 @@ function NotesPage() {
     if (files.length === 0 || busy) return;
     setError(null);
     setBusy(true);
+    setStage("Preparing your file…");
     try {
-      const res = await extractTextFromFiles(files, getUserApiKey());
+      const res = await extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
+        const suffix = cur && total && total > 1 ? ` (${cur} of ${total})` : "";
+        setStage(
+          (s === "compressing"
+            ? "Shrinking your image…"
+            : s === "reading"
+              ? "Reading your image…"
+              : "Cleaning up notes…") + suffix,
+        );
+      });
       if (!res.ok) {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
@@ -187,6 +198,7 @@ function NotesPage() {
       setError({ message: "Sorry, we couldn't read that file. Please try another one.", keyIssue: false });
     } finally {
       setBusy(false);
+      setStage(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -247,7 +259,7 @@ function NotesPage() {
       >
         {busy ? (
           <span className="flex items-center gap-2">
-            <Loader2 className="animate-spin" size={20} /> Reading &amp; cleaning your file…
+            <Loader2 className="animate-spin" size={20} /> {stage ?? "Reading your file…"}
           </span>
         ) : (
           <span className="flex items-center gap-2">
@@ -255,6 +267,11 @@ function NotesPage() {
           </span>
         )}
       </Button>
+      {busy ? (
+        <p aria-live="polite" className="mt-2 text-center text-xs text-muted-foreground">
+          {stage ?? "Working on it…"} This usually takes a few seconds.
+        </p>
+      ) : null}
       <div className="mt-3">
         <VoiceNoteButton
           disabled={busy}
