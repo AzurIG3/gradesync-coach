@@ -72,6 +72,18 @@ function NotesPage() {
   const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [uploadSubject, setUploadSubject] = useState("");
+  const [lastFiles, setLastFiles] = useState<File[]>([]);
+  const [progress, setProgress] = useState<{ cur: number; total: number } | null>(null);
+  const [estimate, setEstimate] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Ticking elapsed counter so a long extraction never looks frozen.
+  useEffect(() => {
+    if (!busy) return;
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [busy]);
+
 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("date");
