@@ -259,7 +259,7 @@ function NotesPage() {
       >
         {busy ? (
           <span className="flex items-center gap-2">
-            <Loader2 className="animate-spin" size={20} /> Reading &amp; cleaning your file…
+            <Loader2 className="animate-spin" size={20} /> {stage ?? "Reading your file…"}
           </span>
         ) : (
           <span className="flex items-center gap-2">
@@ -267,6 +267,11 @@ function NotesPage() {
           </span>
         )}
       </Button>
+      {busy ? (
+        <p aria-live="polite" className="mt-2 text-center text-xs text-muted-foreground">
+          {stage ?? "Working on it…"} This usually takes a few seconds.
+        </p>
+      ) : null}
       <div className="mt-3">
         <VoiceNoteButton
           disabled={busy}
