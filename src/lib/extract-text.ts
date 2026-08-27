@@ -1,12 +1,24 @@
 import { cleanNoteText, extractFileText } from "./notes.functions";
+import { getCachedText, hashFile, setCachedText } from "./extract-cache";
 
 export type ExtractResult =
   | { ok: true; text: string }
-  | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+  | { ok: false; kind: "rate_limit" | "bad_key" | "timeout" | "error"; message: string };
 
 /** Stages reported back to the UI so the wait feels intentional. */
-export type ExtractStage = "compressing" | "reading" | "cleaning";
+export type ExtractStage = "compressing" | "reading" | "cleaning" | "cached";
 export type OnStage = (stage: ExtractStage, current?: number, total?: number) => void;
+
+/** Hard cap per file so a stalled model call surfaces a retry instead of hanging. */
+const FILE_TIMEOUT_MS = 120_000;
+
+function withTimeout<T>(work: Promise<T>, ms = FILE_TIMEOUT_MS): Promise<T | { timedOut: true }> {
+  return Promise.race([
+    work,
+    new Promise<{ timedOut: true }>((resolve) => setTimeout(() => resolve({ timedOut: true }), ms)),
+  ]);
+}
+
 
 function toBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -78,9 +90,18 @@ async function extractRawTextFromFile(
 ): Promise<(ExtractResult & { ok: true; cleaned?: boolean }) | (ExtractResult & { ok: false })> {
   const name = file.name;
 
+  // Same file uploaded again? Serve the previous extraction instantly.
+  const hash = await hashFile(file);
+  const cached = getCachedText(hash);
+  if (cached) {
+    onStage?.("cached");
+    return { ok: true, text: cached, cleaned: true };
+  }
+
   if (TXT.test(name) || file.type.startsWith("text/")) {
     return { ok: true, text: (await file.text()).trim() };
   }
+
 
   if (DOCX.test(name)) {
     const mammoth = (await import("mammoth/mammoth.browser.js" as string)) as any;
@@ -153,14 +174,28 @@ async function extractRawTextFromFile(
   }
 
   onStage?.("reading");
-  const res = (await extractFileText({
-    data: { data, mimeType, clean: true, apiKey },
-  })) as ExtractResult;
+  const raced = await withTimeout(
+    extractFileText({ data: { data, mimeType, clean: true, apiKey } }) as Promise<ExtractResult>,
+  );
+  if ("timedOut" in raced) {
+    return {
+      ok: false,
+      kind: "timeout",
+      message:
+        "Reading that file took too long and timed out. Please try again — smaller or clearer photos are usually much faster.",
+    };
+  }
+  const res = raced;
   if (res.ok && res.text.trim() === "NO_TEXT_FOUND") {
     return { ok: false, kind: "error", message: "We couldn't find any readable text in that file." };
   }
-  return res.ok ? { ok: true, text: res.text, cleaned: true } : res;
+  if (res.ok) {
+    setCachedText(hash, res.text);
+    return { ok: true, text: res.text, cleaned: true };
+  }
+  return res;
 }
+
 
 /**
  * Runs the shared AI cleanup pass over already-extracted raw text (used for

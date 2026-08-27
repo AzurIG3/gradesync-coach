@@ -72,6 +72,18 @@ function NotesPage() {
   const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [uploadSubject, setUploadSubject] = useState("");
+  const [lastFiles, setLastFiles] = useState<File[]>([]);
+  const [progress, setProgress] = useState<{ cur: number; total: number } | null>(null);
+  const [estimate, setEstimate] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Ticking elapsed counter so a long extraction never looks frozen.
+  useEffect(() => {
+    if (!busy) return;
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [busy]);
+
 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("date");
@@ -154,25 +166,34 @@ function NotesPage() {
     navigate({ to: "/notes/test", search: { ids: ordered.join(",") } });
   }
 
-  async function onPick(picked: FileList | null) {
-    const files = picked ? Array.from(picked) : [];
+  async function run(files: File[]) {
     if (files.length === 0 || busy) return;
     setError(null);
     setBusy(true);
+    setElapsed(0);
+    setProgress({ cur: 1, total: files.length });
+    const seconds = estimateSeconds(files);
+    setEstimate(seconds);
     setStage("Preparing your file…");
     try {
       const res = await extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
-        const suffix = cur && total && total > 1 ? ` (${cur} of ${total})` : "";
+        if (cur && total) setProgress({ cur, total });
+        const suffix = cur && total && total > 1 ? ` (image ${cur} of ${total})` : "";
         setStage(
           (s === "compressing"
             ? "Shrinking your image…"
             : s === "reading"
               ? "Reading your image…"
-              : "Cleaning up notes…") + suffix,
+              : s === "cached"
+                ? "Found this file already — loading instantly…"
+                : "Cleaning up notes…") + suffix,
         );
       });
       if (!res.ok) {
-        setError({ message: res.message, keyIssue: res.kind !== "error" });
+        setError({
+          message: res.message,
+          keyIssue: res.kind === "rate_limit" || res.kind === "bad_key",
+        });
         return;
       }
       if (!res.text.trim()) {
@@ -199,9 +220,18 @@ function NotesPage() {
     } finally {
       setBusy(false);
       setStage(null);
+      setProgress(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
+
+  async function onPick(pickedFiles: FileList | null) {
+    const files = pickedFiles ? Array.from(pickedFiles) : [];
+    if (files.length === 0) return;
+    setLastFiles(files);
+    await run(files);
+  }
+
 
   return (
     <AppShell title="Smart Notes" subtitle="Turn your files into simple study notes">
