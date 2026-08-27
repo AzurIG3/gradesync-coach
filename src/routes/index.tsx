@@ -159,6 +159,10 @@ function Home() {
         )}
       </section>
 
+      <div className="mb-4">
+        <WeeklyInsights compact />
+      </div>
+
       {/* Quote */}
       <Card className="border-0 bg-gradient-to-br from-secondary to-accent/60 p-5 shadow-soft">
         <div className="flex items-start gap-3">
