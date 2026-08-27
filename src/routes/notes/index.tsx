@@ -69,6 +69,7 @@ function NotesPage() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [uploadSubject, setUploadSubject] = useState("");
 
