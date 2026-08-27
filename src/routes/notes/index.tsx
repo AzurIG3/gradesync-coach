@@ -380,6 +380,31 @@ function NotesPage() {
         Your notes
       </h2>
 
+      {notes.length > 0 && (
+        <div className="relative mt-3">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search inside all your notes…"
+            aria-label="Search all notes"
+            className="w-full rounded-xl border border-border bg-background py-3 pl-9 pr-3 text-sm outline-none focus:border-primary"
+          />
+        </div>
+      )}
+
+      {q && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {matched.length === 0
+            ? "No notes match your search."
+            : `${matched.length} ${matched.length === 1 ? "note" : "notes"} match "${query.trim()}"`}
+        </p>
+      )}
+
       <div className="mt-4 space-y-4 pb-4">
         {notes.length === 0 && !busy && (
           <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center">
