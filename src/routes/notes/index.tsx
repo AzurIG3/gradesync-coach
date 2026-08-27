@@ -158,8 +158,18 @@ function NotesPage() {
     if (files.length === 0 || busy) return;
     setError(null);
     setBusy(true);
+    setStage("Preparing your file…");
     try {
-      const res = await extractTextFromFiles(files, getUserApiKey());
+      const res = await extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
+        const suffix = cur && total && total > 1 ? ` (${cur} of ${total})` : "";
+        setStage(
+          (s === "compressing"
+            ? "Shrinking your image…"
+            : s === "reading"
+              ? "Reading your image…"
+              : "Cleaning up notes…") + suffix,
+        );
+      });
       if (!res.ok) {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
@@ -187,6 +197,7 @@ function NotesPage() {
       setError({ message: "Sorry, we couldn't read that file. Please try another one.", keyIssue: false });
     } finally {
       setBusy(false);
+      setStage(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
