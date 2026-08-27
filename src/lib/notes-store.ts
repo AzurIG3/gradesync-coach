@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { syncData } from "./sync-bridge";
 
 export type NoteOutputs = Partial<Record<"summary" | "details" | "flashcards" | "quiz", string>>;
 
@@ -38,7 +39,16 @@ function persist() {
   try {
     localStorage.setItem(KEY, JSON.stringify(notes));
   } catch {}
+  syncData("notes", notes);
   listeners.forEach((l) => l());
+}
+
+export function hydrateNotes(value: unknown) {
+  notes = Array.isArray(value) ? (value as Note[]) : [];
+  try {
+    localStorage.setItem(KEY, JSON.stringify(notes));
+  } catch {}
+  listeners.forEach((listener) => listener());
 }
 
 export function useNotes<T>(selector: (n: Note[]) => T): T {

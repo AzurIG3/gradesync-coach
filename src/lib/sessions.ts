@@ -4,6 +4,7 @@
  * Records completed focus sessions and completed daily tasks so the Progress
  * screen can draw a calendar heatmap of real study activity. localStorage only.
  */
+import { syncData } from "./sync-bridge";
 
 const KEY = "sophia.sessions.v1";
 
@@ -33,6 +34,7 @@ function write(rows: SessionEntry[]): void {
   try {
     // Keep roughly a year of history.
     window.localStorage.setItem(KEY, JSON.stringify(rows.slice(-2000)));
+    syncData("sessions", rows.slice(-2000));
   } catch {
     /* ignore */
   }

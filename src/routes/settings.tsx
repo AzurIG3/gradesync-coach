@@ -20,6 +20,8 @@ import {
 } from "@/lib/alarm";
 
 import { cn } from "@/lib/utils";
+import { AccountSyncCard } from "@/components/AccountSyncCard";
+import { actions } from "@/lib/store";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -81,6 +83,7 @@ function SettingsPage() {
   return (
     <AppShell title={t("settingsTitle")} subtitle={t("settingsSubtitle")}>
       <div className="space-y-4">
+        <AccountSyncCard />
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -373,14 +376,7 @@ function SettingsPage() {
             size="lg"
             className="mt-3 w-full rounded-xl text-base font-bold"
             onClick={() => {
-              try {
-                const raw = localStorage.getItem("study-planner-v1");
-                const parsed = raw ? JSON.parse(raw) : {};
-                localStorage.setItem(
-                  "study-planner-v1",
-                  JSON.stringify({ ...parsed, onboarded: false }),
-                );
-              } catch {}
+              actions.replayOnboarding();
               router.navigate({ to: "/" }).then(() => window.location.reload());
             }}
           >

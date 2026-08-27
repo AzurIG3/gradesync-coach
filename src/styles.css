@@ -44,6 +44,8 @@
 
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-urdu: "Noto Nastaliq Urdu", serif;
 
   --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.04), 0 8px 24px -12px var(--shadow-tint);
   --shadow-lift: 0 2px 4px oklch(0 0 0 / 0.05), 0 18px 40px -18px var(--shadow-tint);
@@ -135,7 +137,19 @@
   h1, h2, h3 {
     font-family: var(--font-display);
     font-variation-settings: "SOFT" 0, "WONK" 0;
-    letter-spacing: -0.015em;
+    letter-spacing: 0;
+  }
+  html[lang="ur"] body {
+    font-family: var(--font-urdu);
+    line-height: 2;
+  }
+  html[lang="ur"] h1, html[lang="ur"] h2, html[lang="ur"] h3,
+  html[lang="ur"] .font-display {
+    font-family: var(--font-urdu);
+  }
+  time, .font-mono {
+    font-family: var(--font-mono);
+    letter-spacing: 0;
   }
 }
 
