@@ -21,6 +21,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { AccountSyncCard } from "@/components/AccountSyncCard";
+import { actions } from "@/lib/store";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -375,14 +376,7 @@ function SettingsPage() {
             size="lg"
             className="mt-3 w-full rounded-xl text-base font-bold"
             onClick={() => {
-              try {
-                const raw = localStorage.getItem("study-planner-v1");
-                const parsed = raw ? JSON.parse(raw) : {};
-                localStorage.setItem(
-                  "study-planner-v1",
-                  JSON.stringify({ ...parsed, onboarded: false }),
-                );
-              } catch {}
+              actions.replayOnboarding();
               router.navigate({ to: "/" }).then(() => window.location.reload());
             }}
           >

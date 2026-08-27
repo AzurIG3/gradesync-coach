@@ -238,6 +238,9 @@ export const actions = {
   setOnboarded() {
     setState((s) => ({ ...s, onboarded: true }));
   },
+  replayOnboarding() {
+    setState((s) => ({ ...s, onboarded: false }));
+  },
   setTimerPrefs(focusMin: number, breakMin: number) {
     setState((s) => ({ ...s, timer: { focusMin, breakMin } }));
   },

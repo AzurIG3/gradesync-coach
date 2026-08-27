@@ -12,6 +12,7 @@ const STORAGE_KEYS: Record<SyncDataKey, string> = {
 };
 
 let activeUserId: string | null = null;
+let anonymousSnapshot: Partial<Record<SyncDataKey, unknown>> | null = null;
 const timers = new Map<SyncDataKey, ReturnType<typeof setTimeout>>();
 
 function readLocal(key: SyncDataKey): unknown {
@@ -48,6 +49,11 @@ function scheduleUpload(key: SyncDataKey, payload: unknown) {
 }
 
 export async function initializeAccountSync(userId: string) {
+  if (!activeUserId) {
+    anonymousSnapshot = Object.fromEntries(
+      (Object.keys(STORAGE_KEYS) as SyncDataKey[]).map((key) => [key, readLocal(key)]),
+    );
+  }
   activeUserId = userId;
   registerSyncWriter(scheduleUpload);
   const { data, error } = await supabase
@@ -64,9 +70,15 @@ export async function initializeAccountSync(userId: string) {
   }
 }
 
-export function stopAccountSync() {
+export function stopAccountSync(restoreAnonymous = false) {
   activeUserId = null;
   registerSyncWriter(undefined);
   timers.forEach(clearTimeout);
   timers.clear();
+  if (restoreAnonymous && anonymousSnapshot) {
+    for (const [key, payload] of Object.entries(anonymousSnapshot)) {
+      applyLocal(key as SyncDataKey, payload);
+    }
+    anonymousSnapshot = null;
+  }
 }

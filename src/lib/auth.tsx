@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (active) setSyncing(false);
         }
       } else {
-        stopAccountSync();
+        stopAccountSync(true);
       }
       if (active) setReady(true);
     };
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void supabase.auth.getUser().then(({ data }) => applyUser(data.user));
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
-      void applyUser(session?.user ?? null);
+      window.setTimeout(() => void applyUser(session?.user ?? null), 0);
     });
     return () => {
       active = false;
