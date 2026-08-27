@@ -125,12 +125,19 @@ Do BOTH of these in one pass:
 1. Extract ALL readable text exactly as it appears (headings, lists, tables, formulas, line breaks).
 2. Fix obvious OCR/extraction errors using context (misread characters like "rn" -> "m", "0" -> "O", "l" -> "1", garbled characters, broken or joined words, stray symbols, page numbers, watermark fragments and scan noise), then reformat into readable notes: proper paragraphs, correct punctuation and capitalisation, Markdown headings (\`##\` / \`###\`) where the source clearly has headings, bullet or numbered lists where the source has lists, Markdown tables for tables, and $...$ / $$...$$ for maths.
 
+Formatting that must be preserved and emphasised:
+- Turn the page's own titles into Markdown headings: \`##\` for the main topic, \`###\` for each sub-topic. Never use a single \`#\`, and never skip a level.
+- Turn every list on the page into a real Markdown bullet ("- ") or numbered list — one item per line. Never run list items together in a paragraph.
+- Put **bold** on the important structure the page emphasises: key terms, definitions being named, labels before a colon, formula names, and anything underlined, boxed or written larger in the source.
+- Use nested bullets (two spaces then "- ") where the source clearly has sub-points, and keep a blank line between headings, paragraphs and lists.
+
 Strict rules:
 - PRESERVE the original meaning and EVERY fact, number, name, date, definition and example. Do NOT summarize, shorten, merge or drop any information.
 - Do NOT add new facts, explanations or commentary of your own.
 - If a word is truly unreadable, use your best guess from context rather than inventing content.
 - Reply with ONLY the cleaned notes. No preamble, no code fences around the whole answer.
 - If the file has no readable text at all, reply with exactly: NO_TEXT_FOUND`;
+
 
 /** Cleans raw extracted/OCR text into readable notes WITHOUT losing information. */
 export const CLEANUP_PROMPT = `You are cleaning up text that was extracted from a scanned page, photo or document. The extraction may contain OCR mistakes from blur, warping, shadows or bad lighting.
