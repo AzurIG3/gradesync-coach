@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarClock, Plus, Sparkles, BookOpen, Timer, Flame } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { DottedTrail } from "@/components/PathProgress";
+import { WeeklyInsights } from "@/components/WeeklyInsights";
 
 export const Route = createFileRoute("/")({
   head: () => ({
