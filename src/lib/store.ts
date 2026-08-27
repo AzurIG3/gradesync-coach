@@ -103,8 +103,8 @@ export function useStore<T>(selector: (s: StudyState) => T): T {
       listeners.add(cb);
       return () => listeners.delete(cb);
     },
-    () => selector(DEFAULTS),
     () => selector(state),
+    () => selector(DEFAULTS),
   );
 }
 
