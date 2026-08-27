@@ -16,6 +16,7 @@ import {
   HardDrive,
   ChevronDown,
   BookOpen,
+  Search,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,7 @@ function NotesPage() {
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [uploadSubject, setUploadSubject] = useState("");
 
+  const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("date");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -90,18 +92,31 @@ function NotesPage() {
     return list;
   }, [notes, sort]);
 
+  /** Full-text search across titles, file names and note content. */
+  const q = query.trim().toLowerCase();
+  const matched = useMemo(() => {
+    if (!q) return sorted;
+    return sorted.filter(
+      (n) =>
+        n.title.toLowerCase().includes(q) ||
+        n.fileName.toLowerCase().includes(q) ||
+        n.content.toLowerCase().includes(q) ||
+        Object.values(n.outputs ?? {}).some((v) => (v ?? "").toLowerCase().includes(q)),
+    );
+  }, [sorted, q]);
+
   /** Notes grouped by subject, in the order subjects were created, then "No subject". */
   const groups = useMemo(() => {
     const out: { key: string; name: string; color?: string; notes: Note[] }[] = [];
     for (const sub of subjects) {
-      const items = sorted.filter((n) => n.subjectId === sub.id);
+      const items = matched.filter((n) => n.subjectId === sub.id);
       if (items.length) out.push({ key: sub.id, name: sub.name, color: sub.color, notes: items });
     }
     const known = new Set(subjects.map((s) => s.id));
-    const rest = sorted.filter((n) => !n.subjectId || !known.has(n.subjectId));
+    const rest = matched.filter((n) => !n.subjectId || !known.has(n.subjectId));
     if (rest.length) out.push({ key: NO_SUBJECT, name: "No subject", notes: rest });
     return out;
-  }, [sorted, subjects]);
+  }, [matched, subjects]);
 
   function togglePick(id: string) {
     setPicked((prev) => {
