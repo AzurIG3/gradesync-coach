@@ -90,9 +90,18 @@ async function extractRawTextFromFile(
 ): Promise<(ExtractResult & { ok: true; cleaned?: boolean }) | (ExtractResult & { ok: false })> {
   const name = file.name;
 
+  // Same file uploaded again? Serve the previous extraction instantly.
+  const hash = await hashFile(file);
+  const cached = getCachedText(hash);
+  if (cached) {
+    onStage?.("cached");
+    return { ok: true, text: cached, cleaned: true };
+  }
+
   if (TXT.test(name) || file.type.startsWith("text/")) {
     return { ok: true, text: (await file.text()).trim() };
   }
+
 
   if (DOCX.test(name)) {
     const mammoth = (await import("mammoth/mammoth.browser.js" as string)) as any;
