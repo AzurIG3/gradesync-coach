@@ -7,6 +7,7 @@
  *
  * Everything lives in localStorage — no backend, no extra AI calls.
  */
+import { syncData } from "./sync-bridge";
 
 const KEY = "sophia.mastery.v1";
 
@@ -29,6 +30,7 @@ function write(store: Store): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(store));
+    syncData("mastery", store);
   } catch {
     /* storage full — mastery just stops updating */
   }

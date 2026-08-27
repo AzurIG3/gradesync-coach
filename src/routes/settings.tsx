@@ -20,6 +20,7 @@ import {
 } from "@/lib/alarm";
 
 import { cn } from "@/lib/utils";
+import { AccountSyncCard } from "@/components/AccountSyncCard";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -81,6 +82,7 @@ function SettingsPage() {
   return (
     <AppShell title={t("settingsTitle")} subtitle={t("settingsSubtitle")}>
       <div className="space-y-4">
+        <AccountSyncCard />
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">

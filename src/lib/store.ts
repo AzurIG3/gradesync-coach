@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { syllabusFor, type ClassLevel } from "./syllabus";
 import { logSession } from "./sessions";
+import { syncData } from "./sync-bridge";
 
 export type TopicStatus = "not_started" | "in_progress" | "completed";
 
@@ -78,7 +79,17 @@ function persist() {
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {}
+  syncData("planner", state);
   listeners.forEach((l) => l());
+}
+
+export function hydrateStore(value: unknown) {
+  const incoming = value && typeof value === "object" ? (value as Partial<StudyState>) : {};
+  state = { ...DEFAULTS, ...incoming, timer: { ...DEFAULTS.timer, ...(incoming.timer ?? {}) } };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {}
+  listeners.forEach((listener) => listener());
 }
 
 function setState(updater: (s: StudyState) => StudyState) {
@@ -92,7 +103,7 @@ export function useStore<T>(selector: (s: StudyState) => T): T {
       listeners.add(cb);
       return () => listeners.delete(cb);
     },
-    () => selector(state),
+    () => selector(DEFAULTS),
     () => selector(state),
   );
 }
