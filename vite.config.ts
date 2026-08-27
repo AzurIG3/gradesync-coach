@@ -12,4 +12,21 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    optimizeDeps: {
+      // Pre-bundle these so the dev optimizer never re-bundles mid-session, which
+      // would swap React instances and cause "Invalid hook call" / null hook errors.
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "@tanstack/react-router",
+        "@tanstack/router-core",
+        "@tanstack/router-core/isServer",
+        "@tanstack/router-core/ssr/client",
+        "@tanstack/react-query",
+        "seroval",
+      ],
+    },
+  },
 });
