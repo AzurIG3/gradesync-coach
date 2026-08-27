@@ -174,14 +174,28 @@ async function extractRawTextFromFile(
   }
 
   onStage?.("reading");
-  const res = (await extractFileText({
-    data: { data, mimeType, clean: true, apiKey },
-  })) as ExtractResult;
+  const raced = await withTimeout(
+    extractFileText({ data: { data, mimeType, clean: true, apiKey } }) as Promise<ExtractResult>,
+  );
+  if ("timedOut" in raced) {
+    return {
+      ok: false,
+      kind: "timeout",
+      message:
+        "Reading that file took too long and timed out. Please try again — smaller or clearer photos are usually much faster.",
+    };
+  }
+  const res = raced;
   if (res.ok && res.text.trim() === "NO_TEXT_FOUND") {
     return { ok: false, kind: "error", message: "We couldn't find any readable text in that file." };
   }
-  return res.ok ? { ok: true, text: res.text, cleaned: true } : res;
+  if (res.ok) {
+    setCachedText(hash, res.text);
+    return { ok: true, text: res.text, cleaned: true };
+  }
+  return res;
 }
+
 
 /**
  * Runs the shared AI cleanup pass over already-extracted raw text (used for
