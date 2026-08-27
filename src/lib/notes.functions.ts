@@ -10,24 +10,33 @@ function strList(v: unknown, cap = 40): string[] {
     : [];
 }
 
-/** Extract raw text from an uploaded PDF or image (base64) using Gemini. */
+/**
+ * Extract text from an uploaded PDF or image (base64) using Gemini.
+ * With `clean: true` the extraction and the cleanup pass happen in ONE call.
+ */
 export const extractFileText = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const o = (input ?? {}) as Record<string, unknown>;
     const data = str(o.data, 12_000_000);
     const mimeType = str(o.mimeType, 200);
     if (!data || !mimeType) throw new Error("Missing file data");
-    return { data, mimeType, apiKey: str(o.apiKey, 200).trim() };
+    return {
+      data,
+      mimeType,
+      clean: o.clean !== false,
+      apiKey: str(o.apiKey, 200).trim(),
+    };
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
-    const { callGemini, EXTRACT_PROMPT } = await import("./notes.server");
+    const { callGemini, EXTRACT_PROMPT, EXTRACT_CLEAN_PROMPT } = await import("./notes.server");
     const key = resolveApiKey(data.apiKey);
     return callGemini(
       key,
       [{ inlineData: { mimeType: data.mimeType, data: data.data } }],
-      EXTRACT_PROMPT,
+      data.clean ? EXTRACT_CLEAN_PROMPT : EXTRACT_PROMPT,
       Boolean(data.apiKey),
+      data.clean ? { temperature: 0.2, maxOutputTokens: 8192 } : undefined,
     );
   });
 
