@@ -299,10 +299,39 @@ function NotesPage() {
         )}
       </Button>
       {busy ? (
-        <p aria-live="polite" className="mt-2 text-center text-xs text-muted-foreground">
-          {stage ?? "Working on it…"} This usually takes a few seconds.
-        </p>
+        <div className="mt-3 rounded-2xl border border-border bg-card p-3">
+          <p aria-live="polite" className="text-center text-xs font-semibold">
+            {stage ?? "Working on it…"}
+          </p>
+          {progress && progress.total > 1 ? (
+            <>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.round((progress.cur / progress.total) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-center text-[11px] font-mono text-muted-foreground">
+                File {progress.cur} of {progress.total}
+              </p>
+            </>
+          ) : (
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-1000"
+                style={{
+                  width: `${Math.min(95, Math.round((elapsed / Math.max(1, estimate ?? 10)) * 100))}%`,
+                }}
+              />
+            </div>
+          )}
+          <p className="mt-1.5 text-center text-[11px] font-mono text-muted-foreground">
+            {elapsed}s elapsed
+            {estimate ? ` · estimated ${formatEstimate(estimate)}` : ""}
+          </p>
+        </div>
       ) : null}
+
       <div className="mt-3">
         <VoiceNoteButton
           disabled={busy}
