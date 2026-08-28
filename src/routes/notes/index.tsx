@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText,
   Upload,
@@ -17,11 +17,13 @@ import {
   ChevronDown,
   BookOpen,
   Search,
+  RotateCcw,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
 import { extractTextFromFiles } from "@/lib/extract-text";
+import { estimateSeconds, formatEstimate } from "@/lib/extract-cache";
 import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
 import { autoFileNote } from "@/lib/note-filing";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
@@ -298,10 +300,39 @@ function NotesPage() {
         )}
       </Button>
       {busy ? (
-        <p aria-live="polite" className="mt-2 text-center text-xs text-muted-foreground">
-          {stage ?? "Working on it…"} This usually takes a few seconds.
-        </p>
+        <div className="mt-3 rounded-2xl border border-border bg-card p-3">
+          <p aria-live="polite" className="text-center text-xs font-semibold">
+            {stage ?? "Working on it…"}
+          </p>
+          {progress && progress.total > 1 ? (
+            <>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.round((progress.cur / progress.total) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-center text-[11px] font-mono text-muted-foreground">
+                File {progress.cur} of {progress.total}
+              </p>
+            </>
+          ) : (
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-1000"
+                style={{
+                  width: `${Math.min(95, Math.round((elapsed / Math.max(1, estimate ?? 10)) * 100))}%`,
+                }}
+              />
+            </div>
+          )}
+          <p className="mt-1.5 text-center text-[11px] font-mono text-muted-foreground">
+            {elapsed}s elapsed
+            {estimate ? ` · estimated ${formatEstimate(estimate)}` : ""}
+          </p>
+        </div>
       ) : null}
+
       <div className="mt-3">
         <VoiceNoteButton
           disabled={busy}
@@ -348,8 +379,21 @@ function NotesPage() {
               </a>
             </>
           )}
+          {lastFiles.length > 0 && (
+            <Button
+              size="lg"
+              variant={error.keyIssue ? "outline" : "default"}
+              disabled={busy}
+              onClick={() => void run(lastFiles)}
+              className="mt-3 w-full rounded-xl text-sm font-bold"
+            >
+              <RotateCcw size={16} /> Try reading{" "}
+              {lastFiles.length === 1 ? "that file" : `those ${lastFiles.length} files`} again
+            </Button>
+          )}
         </div>
       )}
+
 
       {notes.length >= 2 && (
         <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/5 p-4">
