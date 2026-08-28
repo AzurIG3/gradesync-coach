@@ -378,8 +378,22 @@ function NotesPage() {
               </a>
             </>
           )}
+          )}
+          {lastFiles.length > 0 && (
+            <Button
+              size="lg"
+              variant={error.keyIssue ? "outline" : "default"}
+              disabled={busy}
+              onClick={() => void run(lastFiles)}
+              className="mt-3 w-full rounded-xl text-sm font-bold"
+            >
+              <RotateCcw size={16} /> Try reading{" "}
+              {lastFiles.length === 1 ? "that file" : `those ${lastFiles.length} files`} again
+            </Button>
+          )}
         </div>
       )}
+
 
       {notes.length >= 2 && (
         <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/5 p-4">
