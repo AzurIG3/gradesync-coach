@@ -26,6 +26,11 @@ export default defineConfig({
         "@tanstack/router-core/ssr/client",
         "@tanstack/react-query",
         "seroval",
+        // Heavy libs loaded lazily during note extraction. Without pre-bundling,
+        // the first upload triggers a mid-session re-optimize + reload that can
+        // leave a null React instance ("Cannot read properties of null").
+        "xlsx",
+        "mammoth/mammoth.browser.js",
       ],
     },
   },
