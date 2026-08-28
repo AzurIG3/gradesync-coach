@@ -22,6 +22,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
 import { extractTextFromFiles } from "@/lib/extract-text";
+import { estimateSeconds, formatEstimate } from "@/lib/extract-cache";
 import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
 import { autoFileNote } from "@/lib/note-filing";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
