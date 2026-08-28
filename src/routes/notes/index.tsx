@@ -378,7 +378,6 @@ function NotesPage() {
               </a>
             </>
           )}
-          )}
           {lastFiles.length > 0 && (
             <Button
               size="lg"
