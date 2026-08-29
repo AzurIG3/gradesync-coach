@@ -251,17 +251,43 @@ export async function extractTextFromFiles(
 
   const parts: string[] = [];
   let needsCleanup = false;
-  let i = 0;
-  for (const file of files) {
-    i += 1;
-    const res = await extractRawTextFromFile(file, apiKey, (stage) =>
-      onStage?.(stage, i, files.length),
+
+  // Own-key users have their personal Google quota, so read files in parallel.
+  // Shared-key users stay sequential so the pooled quota isn't hammered.
+  if (apiKey) {
+    let done = 0;
+    const results = await Promise.all(
+      files.map((file) =>
+        extractRawTextFromFile(file, apiKey, (stage) => onStage?.(stage, done + 1, files.length)).then(
+          (r) => {
+            done += 1;
+            onStage?.("reading", done, files.length);
+            return r;
+          },
+        ),
+      ),
     );
-    if (!res.ok) return res;
-    const text = res.text.trim();
-    if (!text) continue;
-    if (!res.cleaned && !XLSX.test(file.name)) needsCleanup = true;
-    parts.push(`## ${file.name.replace(/\.[^.]+$/, "")}\n\n${text}`);
+    for (let idx = 0; idx < results.length; idx++) {
+      const res = results[idx];
+      if (!res.ok) return res;
+      const text = res.text.trim();
+      if (!text) continue;
+      if (!res.cleaned && !XLSX.test(files[idx].name)) needsCleanup = true;
+      parts.push(`## ${files[idx].name.replace(/\.[^.]+$/, "")}\n\n${text}`);
+    }
+  } else {
+    let i = 0;
+    for (const file of files) {
+      i += 1;
+      const res = await extractRawTextFromFile(file, apiKey, (stage) =>
+        onStage?.(stage, i, files.length),
+      );
+      if (!res.ok) return res;
+      const text = res.text.trim();
+      if (!text) continue;
+      if (!res.cleaned && !XLSX.test(file.name)) needsCleanup = true;
+      parts.push(`## ${file.name.replace(/\.[^.]+$/, "")}\n\n${text}`);
+    }
   }
 
   const combined = parts.join("\n\n").trim();
