@@ -35,6 +35,16 @@ export function setUserApiKey(key: string): void {
   } catch {}
 }
 
+/**
+ * True when the student has saved their OWN Gemini key in Settings.
+ * Own-key users hit their personal Google quota, so the app must NOT add any
+ * extra throttling (chat cooldowns, one-file-at-a-time extraction) on top —
+ * Google enforces the real rate limits on their end.
+ */
+export function hasOwnApiKey(): boolean {
+  return getUserApiKey().length > 0;
+}
+
 /** Basic shape check so obvious typos are caught before a request is made. */
 export function looksLikeApiKey(key: string): boolean {
   const k = key.trim();

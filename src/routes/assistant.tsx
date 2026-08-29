@@ -4,7 +4,7 @@ import { Send, Sparkles, KeyRound, ExternalLink, RotateCcw, ArrowDown } from "lu
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { askAssistant } from "@/lib/assistant.functions";
-import { getUserApiKey } from "@/lib/ai-config";
+import { getUserApiKey, hasOwnApiKey } from "@/lib/ai-config";
 import { Markdown } from "@/components/notes/Markdown";
 import { ExplainTools } from "@/components/notes/ExplainTools";
 import { useStore, daysBetween, todayISO } from "@/lib/store";
@@ -44,7 +44,9 @@ function AssistantPage() {
   const [cooldown, setCooldown] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef<number>(0);
-  const COOLDOWN_MS = 2500;
+  // Shared-key users get a small cooldown to protect the pooled quota.
+  // Students using their own key are only limited by Google's own limits.
+  const COOLDOWN_MS = hasOwnApiKey() ? 0 : 2500;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
