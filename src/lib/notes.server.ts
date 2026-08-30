@@ -205,13 +205,33 @@ export async function callGemini(
   const models = [NOTES_MODEL, AI_MODEL];
   let last: Response | null = null;
 
+  // Hard cap per model call: Gemini occasionally hangs (we've seen 524s after
+  // ~90s), so fail fast with a retryable message instead of stalling the user.
+  const CALL_TIMEOUT_MS = 55_000;
+
   for (const model of models) {
     const url = `${AI_API_BASE}/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    });
+    const startedAt = Date.now();
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+      });
+    } catch (e) {
+      const ms = Date.now() - startedAt;
+      console.error(`Gemini (notes) ${model} aborted after ${ms}ms`, e);
+      return {
+        ok: false,
+        kind: "error",
+        message:
+          "That took too long and timed out on the AI side. Please tap Retry — a smaller or clearer photo usually goes through much faster.",
+      };
+    }
+    const ms = Date.now() - startedAt;
+    console.log(`Gemini (notes) ${model} ${res.status} in ${ms}ms`);
     if (res.ok) {
       const json = (await res.json()) as {
         candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -229,3 +249,4 @@ export async function callGemini(
   console.error("Gemini (notes) error:", status, await last?.text().catch(() => ""));
   return friendly(status, userProvidedKey);
 }
+

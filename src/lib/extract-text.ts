@@ -9,8 +9,12 @@ export type ExtractResult =
 export type ExtractStage = "compressing" | "reading" | "cleaning" | "cached";
 export type OnStage = (stage: ExtractStage, current?: number, total?: number) => void;
 
-/** Hard cap per file so a stalled model call surfaces a retry instead of hanging. */
-const FILE_TIMEOUT_MS = 180_000;
+/**
+ * Hard cap per file so a stalled model call surfaces a retry instead of hanging.
+ * Sits just above the server's own 55s per-call cap so the server error wins
+ * when it can, and the client still gives up well before the user does.
+ */
+const FILE_TIMEOUT_MS = 65_000;
 
 function withTimeout<T>(work: Promise<T>, ms = FILE_TIMEOUT_MS): Promise<T | { timedOut: true }> {
   return Promise.race([

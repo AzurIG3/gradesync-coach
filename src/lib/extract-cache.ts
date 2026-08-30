@@ -67,9 +67,10 @@ export function setCachedText(hash: string | null, text: string) {
 }
 
 /**
- * Rough processing estimate so the wait feels predictable: a fixed model
- * round-trip cost plus a size-dependent part (images are shrunk before upload,
- * so big photos cost less than their raw bytes suggest).
+ * Rough processing estimate so the wait feels predictable. Calibrated against
+ * observed runs (a single photo is typically 20–40s end to end, PDFs longer),
+ * deliberately erring on the generous side so the bar doesn't stall at 95%.
+ * Images are shrunk before upload, so big photos cost less than raw bytes suggest.
  */
 export function estimateSeconds(files: File[]): number {
   let total = 0;
@@ -77,12 +78,13 @@ export function estimateSeconds(files: File[]): number {
     const mb = f.size / (1024 * 1024);
     const isImage = f.type.startsWith("image/");
     const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
-    if (isImage) total += 7 + Math.min(mb, 12) * 1.6;
-    else if (isPdf) total += 9 + Math.min(mb, 20) * 2.2;
-    else total += 3 + Math.min(mb, 10) * 0.6;
+    if (isImage) total += 18 + Math.min(mb, 12) * 2;
+    else if (isPdf) total += 22 + Math.min(mb, 20) * 3;
+    else total += 4 + Math.min(mb, 10) * 0.6;
   }
-  return Math.max(3, Math.round(total));
+  return Math.max(5, Math.round(total));
 }
+
 
 /** "about 25 seconds" / "about 1 min 10 sec" */
 export function formatEstimate(seconds: number): string {
