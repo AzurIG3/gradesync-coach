@@ -117,6 +117,11 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT + PALETTE_INIT_SCRIPT }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator&&(location.hostname==='localhost'||location.hostname.includes('preview'))){navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}).then(function(){return caches.keys()}).then(function(keys){return Promise.all(keys.filter(function(k){return k.indexOf('sophia-')===0}).map(function(k){return caches.delete(k)}))}).catch(function(){})}`,
+          }}
+        />
       </head>
       <body>
         {children}
@@ -124,7 +129,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              `if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,
+              `if('serviceWorker' in navigator&&location.hostname!=='localhost'&&!location.hostname.includes('preview')){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}`,
           }}
         />
       </body>
