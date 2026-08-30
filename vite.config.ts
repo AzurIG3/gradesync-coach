@@ -31,6 +31,16 @@ export default defineConfig({
         // leave a null React instance ("Cannot read properties of null").
         "xlsx",
         "mammoth/mammoth.browser.js",
+        // Notes-only render dependencies must also be present before the first
+        // navigation. Discovering them later makes Vite rebuild the dependency
+        // graph while React is mounted, which can leave hooks on a stale copy.
+        "recharts",
+        "react-markdown",
+        "remark-gfm",
+        "remark-math",
+        "rehype-katex",
+        "react-katex",
+        "katex",
       ],
     },
   },

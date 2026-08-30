@@ -3,7 +3,7 @@
    in localStorage) stay readable without a connection. AI requests are never
    cached — they need the network. */
 
-const CACHE = "sophia-shell-v1";
+const CACHE = "sophia-shell-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icon-512.png", "/favicon.ico"];
 
 self.addEventListener("install", (event) => {
@@ -27,6 +27,14 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // Never cache development modules. Caching transformed Vite modules can
+  // mix dependency generations and produce React's null hook dispatcher.
+  if (
+    url.pathname.startsWith("/src/") ||
+    url.pathname.startsWith("/node_modules/") ||
+    url.pathname.startsWith("/@") ||
+    url.pathname.includes("__vite")
+  ) return;
   // Server functions / API routes must always hit the network.
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_serverFn")) return;
 
