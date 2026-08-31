@@ -59,6 +59,7 @@ async function compressImage(file: File): Promise<{ data: string; mimeType: stri
       el.src = url;
     });
     const scale = Math.min(1, MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+    const wasResized = scale < 1;
     const w = Math.round(img.naturalWidth * scale);
     const h = Math.round(img.naturalHeight * scale);
     const canvas = document.createElement("canvas");
@@ -74,7 +75,10 @@ async function compressImage(file: File): Promise<{ data: string; mimeType: stri
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob((b) => resolve(b), "image/jpeg", 0.72),
     );
-    if (!blob || blob.size >= file.size) return fallback();
+    // Always keep the resized version even when the source JPEG happened to be
+    // smaller in bytes. Sending the original in that case would undo the
+    // dimension cap and make Gemini process all of the camera-resolution pixels.
+    if (!blob || (!wasResized && blob.size >= file.size)) return fallback();
     return { data: await toBase64(blob), mimeType: "image/jpeg" };
   } catch (e) {
     console.error("Image compression failed, sending original", e);
