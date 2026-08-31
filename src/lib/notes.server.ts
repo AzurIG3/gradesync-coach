@@ -177,6 +177,14 @@ function friendly(status: number, userProvidedKey: boolean): GeminiResult {
         : "The app's AI key isn't working right now. You can add your own free Gemini key in Settings to keep going.",
     };
   }
+  if (status === 503) {
+    return {
+      ok: false,
+      kind: "error",
+      message:
+        "The AI service is temporarily overloaded. We retried once, but it is still unavailable. Please tap Retry in a moment.",
+    };
+  }
   return {
     ok: false,
     kind: "error",
@@ -202,47 +210,72 @@ export async function callGemini(
     },
   });
 
-  const models = [NOTES_MODEL, AI_MODEL];
+  const models = [...new Set([NOTES_MODEL, AI_MODEL])];
   let last: Response | null = null;
 
-  // Hard cap per model call: Gemini occasionally hangs (we've seen 524s after
-  // ~90s), so fail fast with a retryable message instead of stalling the user.
-  const CALL_TIMEOUT_MS = 55_000;
+  // Keep the whole server request below the hosting request ceiling. A quick
+  // upstream 503 gets one delayed retry; a slow/hung call still returns a clear
+  // error before the function itself can be terminated with an opaque 503.
+  const REQUEST_BUDGET_MS = 58_000;
+  const ATTEMPT_TIMEOUT_MS = 50_000;
+  const RETRY_DELAY_MS = 1_200;
+  const deadline = Date.now() + REQUEST_BUDGET_MS;
 
   for (const model of models) {
     const url = `${AI_API_BASE}/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-    const startedAt = Date.now();
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
-      });
-    } catch (e) {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 1_000) {
+        return {
+          ok: false,
+          kind: "error",
+          message:
+            "Reading that file reached the processing time limit. Please tap Retry — a smaller or clearer photo is usually faster.",
+        };
+      }
+
+      const startedAt = Date.now();
+      let res: Response;
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          signal: AbortSignal.timeout(Math.min(ATTEMPT_TIMEOUT_MS, remaining)),
+        });
+      } catch (e) {
+        const ms = Date.now() - startedAt;
+        console.error(`Gemini (notes) ${model} attempt ${attempt} aborted after ${ms}ms`, e);
+        return {
+          ok: false,
+          kind: "error",
+          message:
+            "Reading that file reached the processing time limit. Please tap Retry — a smaller or clearer photo is usually faster.",
+        };
+      }
+
       const ms = Date.now() - startedAt;
-      console.error(`Gemini (notes) ${model} aborted after ${ms}ms`, e);
-      return {
-        ok: false,
-        kind: "error",
-        message:
-          "That took too long and timed out on the AI side. Please tap Retry — a smaller or clearer photo usually goes through much faster.",
-      };
+      console.log(`Gemini (notes) ${model} attempt ${attempt} ${res.status} in ${ms}ms`);
+      if (res.ok) {
+        const json = (await res.json()) as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        };
+        const text =
+          json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+        return { ok: true, text: text.trim() };
+      }
+
+      last = res;
+      if (res.status === 503 && attempt === 1) {
+        console.warn(`Gemini (notes) ${model} unavailable; retrying once after backoff`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        continue;
+      }
+
+      break;
     }
-    const ms = Date.now() - startedAt;
-    console.log(`Gemini (notes) ${model} ${res.status} in ${ms}ms`);
-    if (res.ok) {
-      const json = (await res.json()) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      };
-      const text =
-        json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-      return { ok: true, text: text.trim() };
-    }
-    last = res;
     // Only fall back to the alternate flash model if this id was rejected.
-    if (res.status !== 404) break;
+    if (last?.status !== 404) break;
   }
 
   const status = last?.status ?? 500;
