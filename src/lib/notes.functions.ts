@@ -36,7 +36,12 @@ export const extractFileText = createServerFn({ method: "POST" })
       [{ inlineData: { mimeType: data.mimeType, data: data.data } }],
       data.clean ? EXTRACT_CLEAN_PROMPT : EXTRACT_PROMPT,
       Boolean(data.apiKey),
-      data.clean ? { temperature: 0.2, maxOutputTokens: 8192 } : undefined,
+      {
+        feature: "extractFileText",
+        timeoutMessage:
+          "Reading that file reached the processing time limit. Please tap Retry — a smaller or clearer photo is usually faster.",
+        ...(data.clean ? { temperature: 0.2, maxOutputTokens: 8192 } : {}),
+      },
     );
   });
 
@@ -53,6 +58,7 @@ export const cleanNoteText = createServerFn({ method: "POST" })
     const { callGemini, CLEANUP_PROMPT } = await import("./notes.server");
     const key = resolveApiKey(data.apiKey);
     return callGemini(key, [{ text: data.text }], CLEANUP_PROMPT, Boolean(data.apiKey), {
+      feature: "cleanNoteText",
       temperature: 0.2,
       maxOutputTokens: 8192,
     });
@@ -116,6 +122,8 @@ export const generateFromNote = createServerFn({ method: "POST" })
       parts,
       system,
       Boolean(data.apiKey),
-      varied ? { temperature: 0.95, topP: 0.95 } : undefined,
+      varied
+        ? { feature: "generateFromNote", temperature: 0.95, topP: 0.95 }
+        : { feature: "generateFromNote" },
     );
   });
