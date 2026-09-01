@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { AI_API_BASE, AI_MODEL } from "./ai-config";
 
 type ChatMsg = { role: "user" | "assistant"; content: string };
 
@@ -36,6 +35,7 @@ export const askAboutNote = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
+    const { callGeminiShared } = await import("./gemini.server");
     const key = resolveApiKey(data.apiKey);
 
     const systemPrompt = `You are a friendly AI tutor for a Pakistani Matric (Grade 9-10) student. You are helping them understand ONE specific note they uploaded${
@@ -58,49 +58,23 @@ ${data.noteContent}
       parts: [{ text: m.content }],
     }));
 
-    // Smart Notes always uses the flash tier.
-    const url = `${AI_API_BASE}/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents,
-        generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
-      }),
+    // Smart Notes always uses the flash tier; shared client handles the rest.
+    const res = await callGeminiShared({
+      feature: "askAboutNote",
+      key,
+      systemPrompt,
+      userProvidedKey: Boolean(data.apiKey),
+      parts: contents.flatMap((c) => c.parts),
+      history: contents,
+      temperature: 0.4,
+      maxOutputTokens: 900,
     });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.error("Note chat error:", res.status, errText);
-      if (res.status === 429) {
-        return {
-          reply:
-            "Our AI is a bit busy right now. Please wait a moment or add your own free Gemini key in Settings.",
-          kind: "rate_limit" as const,
-        };
-      }
-      if (res.status === 401 || res.status === 403) {
-        return {
-          reply: data.apiKey
-            ? "That API key looks invalid. Please check the key in Settings."
-            : "The app's AI key isn't working right now. Add your own free Gemini key in Settings.",
-          kind: "bad_key" as const,
-        };
-      }
-      return {
-        reply: `Sorry, that didn't work (error ${res.status}). Please try again.`,
-        kind: "error" as const,
-      };
+      return { reply: res.message, kind: res.kind === "timeout" ? ("error" as const) : res.kind };
     }
-
-    const json = (await res.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    const text =
-      json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
     return {
-      reply: text.trim() || "Sorry, I couldn't answer that. Try rephrasing?",
+      reply: res.text.trim() || "Sorry, I couldn't answer that. Try rephrasing?",
       kind: "ok" as const,
     };
   });
