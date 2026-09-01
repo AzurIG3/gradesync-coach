@@ -1,5 +1,6 @@
 import { cleanNoteText, extractFileText } from "./notes.functions";
 import { getCachedText, hashFile, setCachedText } from "./extract-cache";
+import { compressImage, toBase64 } from "./image-compress";
 
 export type ExtractResult =
   | { ok: true; text: string }
@@ -24,67 +25,9 @@ function withTimeout<T>(work: Promise<T>, ms = FILE_TIMEOUT_MS): Promise<T | { t
 }
 
 
-function toBase64(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const r = String(reader.result ?? "");
-      resolve(r.slice(r.indexOf(",") + 1));
-    };
-    reader.onerror = () => reject(new Error("Could not read the file"));
-    reader.readAsDataURL(file);
-  });
-}
-
 const DOCX = /\.(docx?)$/i;
 const XLSX = /\.(xlsx|xls|csv)$/i;
 const TXT = /\.(txt|md|rtf)$/i;
-
-const MAX_EDGE = 1600;
-
-/**
- * Shrinks a camera photo before upload: full-resolution photos are far bigger
- * than text extraction needs and slow down both the upload and the model.
- * Falls back to the original file if anything goes wrong.
- */
-async function compressImage(file: File): Promise<{ data: string; mimeType: string }> {
-  const fallback = async () => ({ data: await toBase64(file), mimeType: file.type });
-  if (typeof document === "undefined") return fallback();
-  try {
-    const url = URL.createObjectURL(file);
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error("decode failed"));
-      el.src = url;
-    });
-    const scale = Math.min(1, MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
-    const wasResized = scale < 1;
-    const w = Math.round(img.naturalWidth * scale);
-    const h = Math.round(img.naturalHeight * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      URL.revokeObjectURL(url);
-      return fallback();
-    }
-    ctx.drawImage(img, 0, 0, w, h);
-    URL.revokeObjectURL(url);
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.72),
-    );
-    // Always keep the resized version even when the source JPEG happened to be
-    // smaller in bytes. Sending the original in that case would undo the
-    // dimension cap and make Gemini process all of the camera-resolution pixels.
-    if (!blob || (!wasResized && blob.size >= file.size)) return fallback();
-    return { data: await toBase64(blob), mimeType: "image/jpeg" };
-  } catch (e) {
-    console.error("Image compression failed, sending original", e);
-    return fallback();
-  }
-}
 
 /**
  * Turns an uploaded file into text.

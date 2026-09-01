@@ -20,6 +20,7 @@ import { parseBoardExam, parseQuiz, type BoardExam, type QuizQuestion } from "@/
 import { dedupeQuestions, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
 import { strongTopics, weakTopics } from "@/lib/mastery";
 import { cn } from "@/lib/utils";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 type Search = { ids?: string };
 
@@ -30,7 +31,7 @@ const DIFFICULTIES: { id: Difficulty; label: string }[] = [
 ];
 
 export const Route = createFileRoute("/notes/test")({
-  component: SectionTestPage,
+  component: withPageBoundary(SectionTestPage, "section-test"),
   validateSearch: (s: Record<string, unknown>): Search => ({
     ids: typeof s.ids === "string" ? s.ids : undefined,
   }),

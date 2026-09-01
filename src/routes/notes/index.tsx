@@ -30,9 +30,10 @@ import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/no
 import { useStore } from "@/lib/store";
 import { RenameIconButton } from "@/components/notes/EditableTitle";
 import { cn } from "@/lib/utils";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/notes/")({
-  component: NotesPage,
+  component: withPageBoundary(NotesPage, "notes"),
   head: () => ({
     meta: [
       { title: "Smart Notes — Matric Study Planner" },

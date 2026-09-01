@@ -9,6 +9,7 @@ import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { Button } from "@/components/ui/button";
 import { Target } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 
 export const Route = createFileRoute("/progress")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/progress")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/progress" }],
   }),
-  component: ProgressPage,
+  component: withPageBoundary(ProgressPage, "progress"),
 });
 
 function ProgressPage() {

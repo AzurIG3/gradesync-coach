@@ -36,6 +36,7 @@ import { dedupeBy, dedupeQuestions, loadAsked, rememberAsked } from "@/lib/quiz-
 import { strongTopics, weakTopics } from "@/lib/mastery";
 import type { Difficulty } from "@/components/notes/QuizView";
 import { cn } from "@/lib/utils";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 
 
@@ -65,7 +66,7 @@ const DIFFICULTIES: { id: Difficulty; label: string }[] = [
 
 
 export const Route = createFileRoute("/notes/$noteId")({
-  component: NoteDetailPage,
+  component: withPageBoundary(NoteDetailPage, "note-detail"),
   head: () => ({
     meta: [
       { title: "Note — Smart Notes | Matric Study Planner" },

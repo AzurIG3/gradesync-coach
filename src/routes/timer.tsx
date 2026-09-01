@@ -21,6 +21,8 @@ import {
   requestNotifyPermission,
   setFocusSilenced,
 } from "@/lib/focus-mode";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
+
 
 export const Route = createFileRoute("/timer")({
   head: () => ({
@@ -35,7 +37,7 @@ export const Route = createFileRoute("/timer")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/timer" }],
   }),
-  component: TimerPage,
+  component: withPageBoundary(TimerPage, "timer"),
 });
 
 function TimerPage() {

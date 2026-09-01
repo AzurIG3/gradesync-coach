@@ -11,6 +11,7 @@ import { dedupeQuestions, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
 import { generateWeakSpotQuiz } from "@/lib/ai-extra.functions";
 import { getUserApiKey } from "@/lib/ai-config";
 import { cn } from "@/lib/utils";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 const TITLE = "Quiz My Weak Spots — Sophia Odyssey";
 const DESC =
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/notes/weak")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/notes/weak" }],
   }),
-  component: WeakSpotsPage,
+  component: withPageBoundary(WeakSpotsPage, "weak-spots"),
 });
 
 const DIFFS: { id: Difficulty; label: string }[] = [

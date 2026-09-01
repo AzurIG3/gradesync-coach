@@ -22,9 +22,10 @@ import {
 import { cn } from "@/lib/utils";
 import { AccountSyncCard } from "@/components/AccountSyncCard";
 import { actions } from "@/lib/store";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/settings")({
-  component: SettingsPage,
+  component: withPageBoundary(SettingsPage, "settings"),
   head: () => ({
     meta: [
       { title: "Settings — Matric Study Planner" },

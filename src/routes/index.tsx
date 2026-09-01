@@ -8,6 +8,7 @@ import { CalendarClock, Plus, Sparkles, BookOpen, Timer, Flame } from "lucide-re
 import { useT } from "@/lib/i18n";
 import { DottedTrail } from "@/components/PathProgress";
 import { WeeklyInsights } from "@/components/WeeklyInsights";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/" }],
   }),
-  component: Home,
+  component: withPageBoundary(Home, "home"),
 });
 
 const QUOTES_EN = [

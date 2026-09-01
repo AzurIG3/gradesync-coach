@@ -1,4 +1,4 @@
-import { AI_MODEL, AI_API_BASE } from "./ai-config";
+import { AI_MODEL } from "./ai-config";
 
 /** Preferred model for Smart Notes (flash tier, never Pro). */
 export const NOTES_MODEL = "gemini-flash-latest";
@@ -153,133 +153,48 @@ Strict rules:
 - If a word is truly unreadable, keep your best guess from context rather than inventing new content.
 - Reply with ONLY the cleaned text. No preamble, no code fences around the whole answer.`;
 
-type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
+import {
+  callGeminiShared,
+  type GeminiFeature,
+  type GeminiResult as SharedGeminiResult,
+  type Part,
+} from "./gemini.server";
 
-export type GeminiResult =
-  | { ok: true; text: string }
-  | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+export type { Part };
+export type GeminiResult = SharedGeminiResult;
 
-function friendly(status: number, userProvidedKey: boolean): GeminiResult {
-  if (status === 429) {
-    return {
-      ok: false,
-      kind: "rate_limit",
-      message:
-        "Our AI assistant is a bit busy right now. You can wait a few minutes and try again, or add your own free Gemini API key in Settings for unlimited access.",
-    };
-  }
-  if (status === 401 || status === 403) {
-    return {
-      ok: false,
-      kind: "bad_key",
-      message: userProvidedKey
-        ? "That API key looks invalid or doesn't have access. Please check the key you saved in Settings."
-        : "The app's AI key isn't working right now. You can add your own free Gemini key in Settings to keep going.",
-    };
-  }
-  if (status === 503) {
-    return {
-      ok: false,
-      kind: "error",
-      message:
-        "The AI service is temporarily overloaded. We retried once, but it is still unavailable. Please tap Retry in a moment.",
-    };
-  }
-  return {
-    ok: false,
-    kind: "error",
-    message: `Sorry, that didn't work right now (error ${status}). Please try again in a moment.`,
-  };
-}
-
-/** Single place where Smart Notes talks to the native Gemini endpoint. */
+/**
+ * Thin wrapper kept for the existing Smart Notes call sites — all of the
+ * timeout / retry / logging behaviour now lives in the shared client.
+ */
 export async function callGemini(
   key: string,
   parts: Part[],
   systemPrompt: string,
   userProvidedKey: boolean,
-  opts?: { temperature?: number; maxOutputTokens?: number; topP?: number },
+  opts?: {
+    temperature?: number;
+    maxOutputTokens?: number;
+    topP?: number;
+    feature?: GeminiFeature;
+    models?: string[];
+    responseMimeType?: string;
+    timeoutMessage?: string;
+  },
 ): Promise<GeminiResult> {
-  const body = JSON.stringify({
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: "user", parts }],
-    generationConfig: {
-      temperature: opts?.temperature ?? 0.4,
-      ...(opts?.topP !== undefined ? { topP: opts.topP } : {}),
-      maxOutputTokens: opts?.maxOutputTokens ?? 2048,
-    },
+  return callGeminiShared({
+    feature: opts?.feature ?? "generateFromNote",
+    key,
+    parts,
+    systemPrompt,
+    userProvidedKey,
+    models: opts?.models ?? [...new Set([NOTES_MODEL, AI_MODEL])],
+    ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
+    ...(opts?.topP !== undefined ? { topP: opts.topP } : {}),
+    maxOutputTokens: opts?.maxOutputTokens ?? 2048,
+    ...(opts?.responseMimeType ? { responseMimeType: opts.responseMimeType } : {}),
+    ...(opts?.timeoutMessage ? { timeoutMessage: opts.timeoutMessage } : {}),
   });
-
-  const models = [...new Set([NOTES_MODEL, AI_MODEL])];
-  let last: Response | null = null;
-
-  // Keep the whole server request below the hosting request ceiling. A quick
-  // upstream 503 gets one delayed retry; a slow/hung call still returns a clear
-  // error before the function itself can be terminated with an opaque 503.
-  const REQUEST_BUDGET_MS = 58_000;
-  const ATTEMPT_TIMEOUT_MS = 50_000;
-  const RETRY_DELAY_MS = 1_200;
-  const deadline = Date.now() + REQUEST_BUDGET_MS;
-
-  for (const model of models) {
-    const url = `${AI_API_BASE}/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      const remaining = deadline - Date.now();
-      if (remaining <= 1_000) {
-        return {
-          ok: false,
-          kind: "error",
-          message:
-            "Reading that file reached the processing time limit. Please tap Retry — a smaller or clearer photo is usually faster.",
-        };
-      }
-
-      const startedAt = Date.now();
-      let res: Response;
-      try {
-        res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-          signal: AbortSignal.timeout(Math.min(ATTEMPT_TIMEOUT_MS, remaining)),
-        });
-      } catch (e) {
-        const ms = Date.now() - startedAt;
-        console.error(`Gemini (notes) ${model} attempt ${attempt} aborted after ${ms}ms`, e);
-        return {
-          ok: false,
-          kind: "error",
-          message:
-            "Reading that file reached the processing time limit. Please tap Retry — a smaller or clearer photo is usually faster.",
-        };
-      }
-
-      const ms = Date.now() - startedAt;
-      console.log(`Gemini (notes) ${model} attempt ${attempt} ${res.status} in ${ms}ms`);
-      if (res.ok) {
-        const json = (await res.json()) as {
-          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-        };
-        const text =
-          json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-        return { ok: true, text: text.trim() };
-      }
-
-      last = res;
-      if (res.status === 503 && attempt === 1) {
-        console.warn(`Gemini (notes) ${model} unavailable; retrying once after backoff`);
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-        continue;
-      }
-
-      break;
-    }
-    // Only fall back to the alternate flash model if this id was rejected.
-    if (last?.status !== 404) break;
-  }
-
-  const status = last?.status ?? 500;
-  console.error("Gemini (notes) error:", status, await last?.text().catch(() => ""));
-  return friendly(status, userProvidedKey);
 }
+
 
