@@ -64,7 +64,6 @@ ${data.noteContent}
       key,
       systemPrompt,
       userProvidedKey: Boolean(data.apiKey),
-      parts: contents.flatMap((c) => c.parts),
       history: contents,
       temperature: 0.4,
       maxOutputTokens: 900,

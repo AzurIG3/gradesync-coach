@@ -51,7 +51,10 @@ export type GeminiCallOptions = {
   /** Which AI feature is calling — used for logging only. */
   feature: GeminiFeature;
   key: string;
-  parts: Part[];
+  /** Single-turn content. Ignored when `history` is supplied. */
+  parts?: Part[];
+  /** Multi-turn conversation, used verbatim as `contents`. */
+  history?: Array<{ role: string; parts: Part[] }>;
   systemPrompt: string;
   /** True when the student supplied their own key (changes bad-key wording). */
   userProvidedKey: boolean;
@@ -142,7 +145,9 @@ function friendly(status: number, userProvidedKey: boolean): GeminiErr {
 export async function callGeminiShared(opts: GeminiCallOptions): Promise<GeminiResult> {
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: opts.systemPrompt }] },
-    contents: [{ role: "user", parts: opts.parts }],
+    contents: opts.history?.length
+      ? opts.history
+      : [{ role: "user", parts: opts.parts ?? [] }],
     generationConfig: {
       temperature: opts.temperature ?? 0.4,
       ...(opts.topP !== undefined ? { topP: opts.topP } : {}),

@@ -56,7 +56,6 @@ export const askAssistant = createServerFn({ method: "POST" })
       key,
       systemPrompt: SYSTEM_PROMPT,
       userProvidedKey: Boolean(data.apiKey),
-      parts: contents.flatMap((c) => c.parts),
       history: contents,
       temperature: 0.6,
       maxOutputTokens: 6144,
