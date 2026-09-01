@@ -16,6 +16,7 @@ import {
   type AlarmId,
 } from "@/lib/alarm";
 import {
+import { withPageBoundary } from "@/components/PageErrorBoundary";
   notifyAlways,
   notifyPermission,
   requestNotifyPermission,
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/timer")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/timer" }],
   }),
-  component: TimerPage,
+  component: withPageBoundary(TimerPage, "timer"),
 });
 
 function TimerPage() {

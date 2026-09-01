@@ -9,13 +9,14 @@ import { Markdown } from "@/components/notes/Markdown";
 import { ExplainTools } from "@/components/notes/ExplainTools";
 import { useStore, daysBetween, todayISO } from "@/lib/store";
 import { useNotes } from "@/lib/notes-store";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 type Msg = { role: "user" | "assistant"; content: string; kind?: string };
 
 
 
 export const Route = createFileRoute("/assistant")({
-  component: AssistantPage,
+  component: withPageBoundary(AssistantPage, "assistant"),
   head: () => ({
     meta: [
       { title: "AI Study Assistant — Matric Study Planner" },

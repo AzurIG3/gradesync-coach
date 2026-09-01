@@ -19,6 +19,7 @@ import { CheatSheet } from "@/components/notes/CheatSheet";
 import { useNotes } from "@/lib/notes-store";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/subjects")({
   head: () => ({
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/subjects")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/subjects" }],
   }),
-  component: SubjectsPage,
+  component: withPageBoundary(SubjectsPage, "subjects"),
 });
 
 function SubjectsPage() {

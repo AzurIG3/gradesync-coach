@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Sparkles, Clock, CalendarDays } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { TrailSpine } from "@/components/PathProgress";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/schedule")({
   head: () => ({
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/schedule")({
     ],
     links: [{ rel: "canonical", href: "https://sophia-odyssey.lovable.app/schedule" }],
   }),
-  component: SchedulePage,
+  component: withPageBoundary(SchedulePage, "schedule"),
 });
 
 function SchedulePage() {

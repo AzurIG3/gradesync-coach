@@ -62,3 +62,17 @@ export class PageErrorBoundary extends Component<Props, State> {
     );
   }
 }
+
+/** Wraps a route component in the page error boundary. */
+export function withPageBoundary<P extends object>(
+  Comp: (props: P) => ReactNode,
+  label: string,
+) {
+  return function BoundedPage(props: P) {
+    return (
+      <PageErrorBoundary label={label}>
+        <Comp {...props} />
+      </PageErrorBoundary>
+    );
+  };
+}
