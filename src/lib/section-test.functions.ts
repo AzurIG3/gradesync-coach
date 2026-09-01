@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { AI_API_BASE, AI_MODEL_FAST } from "./ai-config";
+import { AI_MODEL_FAST } from "./ai-config";
 
 function str(v: unknown, max = 200_000): string {
   return typeof v === "string" ? v.slice(0, max) : "";
@@ -55,6 +55,7 @@ export const generateSectionTest = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { resolveApiKey } = await import("./ai.server");
+    const { callGeminiShared } = await import("./gemini.server");
     const { buildAvoidBlock, buildFocusBlock, difficultyHint, WITHIN_SET_HINT } = await import(
       "./notes.server"
     );
@@ -134,78 +135,26 @@ ${shared}`;
 
     const systemPrompt = data.format === "board" ? boardPrompt : mcqPrompt;
 
-    // The "-lite-latest" alias always points at the current fast model, so this
-    // never breaks when Google retires a dated model id (which returns 404).
-    const url = `${AI_API_BASE}/models/${AI_MODEL_FAST}:generateContent?key=${encodeURIComponent(
+    // Shared client owns the timeout, the single 503/network retry and logging.
+    const res = await callGeminiShared({
+      feature: "generateSectionTest",
       key,
-    )}`;
-    // Hard timeout so the UI is never stuck waiting forever on a hung request.
-    const controller = new AbortController();
-    const TIMEOUT_MS = 90_000;
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: combined }] }],
-          generationConfig: {
-            temperature: 0.95,
-            topP: 0.95,
-            maxOutputTokens: data.format === "board" ? 6144 : 2560,
-            responseMimeType: "application/json",
-          },
-        }),
-      });
-    } catch (err) {
-      clearTimeout(timer);
-      const aborted = (err as { name?: string })?.name === "AbortError";
-      console.error("Section test fetch failed:", err);
-      return {
-        ok: false as const,
-        kind: "error" as const,
-        message: aborted
-          ? "The AI took too long to reply. Try fewer notes, or try again in a moment."
-          : "We couldn't reach the AI. Check your connection and try again.",
-      };
-    }
-    clearTimeout(timer);
+      systemPrompt,
+      userProvidedKey: Boolean(data.apiKey),
+      parts: [{ text: combined }],
+      // "-lite-latest" always points at the current fast model, so this never
+      // breaks when Google retires a dated model id (which returns 404).
+      models: [AI_MODEL_FAST],
+      temperature: 0.95,
+      topP: 0.95,
+      maxOutputTokens: data.format === "board" ? 6144 : 2560,
+      responseMimeType: "application/json",
+      timeoutMessage:
+        "The AI took too long to reply. Try fewer notes, or try again in a moment.",
+    });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.error("Section test error:", res.status, errText);
-      if (res.status === 429) {
-        return {
-          ok: false as const,
-          kind: "rate_limit" as const,
-          message:
-            "Our AI is a bit busy right now. Please wait a moment or add your own free Gemini key in Settings.",
-        };
-      }
-      if (res.status === 401 || res.status === 403) {
-        return {
-          ok: false as const,
-          kind: "bad_key" as const,
-          message: data.apiKey
-            ? "That API key looks invalid. Please check the key in Settings."
-            : "The app's AI key isn't working. Add your own free Gemini key in Settings.",
-        };
-      }
-      return {
-        ok: false as const,
-        kind: "error" as const,
-        message: `Sorry, that didn't work (error ${res.status}). Please try again.`,
-      };
+      return { ok: false as const, kind: res.kind, message: res.message };
     }
-
-    const json = (await res.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    const text =
-      json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-    return { ok: true as const, text: text.trim() };
+    return { ok: true as const, text: res.text };
   });
