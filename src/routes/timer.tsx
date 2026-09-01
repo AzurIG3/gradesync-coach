@@ -16,12 +16,13 @@ import {
   type AlarmId,
 } from "@/lib/alarm";
 import {
-import { withPageBoundary } from "@/components/PageErrorBoundary";
   notifyAlways,
   notifyPermission,
   requestNotifyPermission,
   setFocusSilenced,
 } from "@/lib/focus-mode";
+import { withPageBoundary } from "@/components/PageErrorBoundary";
+
 
 export const Route = createFileRoute("/timer")({
   head: () => ({
