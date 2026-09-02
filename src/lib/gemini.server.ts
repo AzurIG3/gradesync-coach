@@ -10,7 +10,7 @@
  * Behaviour for the user is unchanged: each feature still maps this result to
  * exactly the same reply/kind shape it returned before.
  */
-import { AI_API_BASE, AI_MODEL } from "./ai-config";
+import { AI_API_BASE, AI_MODEL, AI_MODEL_FAST } from "./ai-config";
 
 export type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
 
@@ -156,7 +156,7 @@ export async function callGeminiShared(opts: GeminiCallOptions): Promise<GeminiR
     },
   });
 
-  const models = [...new Set(opts.models?.length ? opts.models : [AI_MODEL])];
+  const models = [...new Set(opts.models?.length ? opts.models : [AI_MODEL_FAST, AI_MODEL])];
   const attemptTimeout = opts.timeoutMs ?? ATTEMPT_TIMEOUT_MS;
   const deadline = Date.now() + (opts.budgetMs ?? REQUEST_BUDGET_MS);
 
