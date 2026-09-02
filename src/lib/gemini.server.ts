@@ -162,16 +162,25 @@ export async function callGeminiShared(opts: GeminiCallOptions): Promise<GeminiR
 
   let lastStatus: number | null = null;
   let lastBody = "";
+  let lastFailure: GeminiErr | null = null;
   const overallStart = Date.now();
 
-  for (const model of models) {
+  for (let m = 0; m < models.length; m += 1) {
+    const model = models[m];
+    const isLastModel = m === models.length - 1;
     const url = `${AI_API_BASE}/models/${model}:generateContent?key=${encodeURIComponent(opts.key)}`;
+    // Leave time for the fallback model when there is one, so a model that
+    // hangs upstream can't eat the whole budget.
+    const perModelTimeout = isLastModel
+      ? attemptTimeout
+      : Math.min(attemptTimeout, Math.floor(attemptTimeout * 0.7));
+    let tryNextModel = false;
 
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const remaining = deadline - Date.now();
       if (remaining <= 1_000) {
         log(opts.feature, model, "budget_exhausted", Date.now() - overallStart);
-        return timeoutError(opts.timeoutMessage);
+        return lastFailure ?? timeoutError(opts.timeoutMessage);
       }
 
       const startedAt = Date.now();
@@ -181,12 +190,12 @@ export async function callGeminiShared(opts: GeminiCallOptions): Promise<GeminiR
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
-          signal: AbortSignal.timeout(Math.min(attemptTimeout, remaining)),
+          signal: AbortSignal.timeout(Math.min(perModelTimeout, remaining)),
         });
       } catch (e) {
         const ms = Date.now() - startedAt;
-        const aborted = (e as { name?: string })?.name === "AbortError" ||
-          (e as { name?: string })?.name === "TimeoutError";
+        const name = (e as { name?: string })?.name;
+        const aborted = name === "AbortError" || name === "TimeoutError";
         log(
           opts.feature,
           model,
@@ -194,18 +203,21 @@ export async function callGeminiShared(opts: GeminiCallOptions): Promise<GeminiR
           ms,
           `attempt=${attempt} err=${String((e as Error)?.message ?? e)}`,
         );
-        // One retry for transient network failures (not for a real timeout,
-        // where a second long attempt would blow the budget anyway).
+        lastFailure = aborted
+          ? timeoutError(opts.timeoutMessage)
+          : {
+              ok: false,
+              kind: "error",
+              message: "We couldn't reach the AI service. Check your connection and try again.",
+            };
+        // One retry for a transient network failure; a hung/timed-out model is
+        // retried on the next model in the list instead.
         if (!aborted && attempt === 1 && deadline - Date.now() > 5_000) {
           await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
           continue;
         }
-        if (aborted) return timeoutError(opts.timeoutMessage);
-        return {
-          ok: false,
-          kind: "error",
-          message: "We couldn't reach the AI service. Check your connection and try again.",
-        };
+        tryNextModel = true;
+        break;
       }
 
       const ms = Date.now() - startedAt;
@@ -240,20 +252,29 @@ export async function callGeminiShared(opts: GeminiCallOptions): Promise<GeminiR
       lastStatus = res.status;
       lastBody = await res.text().catch(() => "");
       log(opts.feature, model, `http_${res.status}`, ms, `attempt=${attempt}`);
+      lastFailure = friendly(res.status, opts.userProvidedKey);
 
       if (res.status === 503 && attempt === 1 && deadline - Date.now() > 5_000) {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         continue;
       }
+      // A rejected model id, an overloaded model or a server error is worth
+      // trying on the next model; key/quota/request errors are not.
+      tryNextModel = res.status === 404 || res.status === 503 || res.status >= 500;
       break;
     }
 
-    // Only fall back to an alternate model when this model id was rejected.
-    if (lastStatus !== 404) break;
+    if (!tryNextModel) break;
+    if (!isLastModel && deadline - Date.now() > 5_000) {
+      console.warn(`[ai] feature=${opts.feature} falling back from ${model}`);
+      continue;
+    }
+    break;
   }
 
   const status = lastStatus ?? 500;
   log(opts.feature, models.join(","), "failed", Date.now() - overallStart, `status=${status}`);
   if (lastBody) console.error(`[ai] feature=${opts.feature} body=${lastBody.slice(0, 500)}`);
-  return friendly(status, opts.userProvidedKey);
+  return lastFailure ?? friendly(status, opts.userProvidedKey);
 }
+
