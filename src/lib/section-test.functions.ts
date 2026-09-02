@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { AI_MODEL_FAST } from "./ai-config";
+import { AI_MODEL, AI_MODEL_FAST } from "./ai-config";
 
 function str(v: unknown, max = 200_000): string {
   return typeof v === "string" ? v.slice(0, max) : "";
