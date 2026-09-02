@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 
 type Props = { children: ReactNode; label?: string };
