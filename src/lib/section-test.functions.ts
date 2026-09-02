@@ -142,9 +142,9 @@ ${shared}`;
       systemPrompt,
       userProvidedKey: Boolean(data.apiKey),
       parts: [{ text: combined }],
-      // "-lite-latest" always points at the current fast model, so this never
-      // breaks when Google retires a dated model id (which returns 404).
-      models: [AI_MODEL_FAST],
+       // Prefer the fast tier, then fall back to the regular flash model if it is
+       // overloaded or temporarily unavailable.
+       models: [AI_MODEL_FAST, AI_MODEL],
       temperature: 0.95,
       topP: 0.95,
       maxOutputTokens: data.format === "board" ? 6144 : 2560,
