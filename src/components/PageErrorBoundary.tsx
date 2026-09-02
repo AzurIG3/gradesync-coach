@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
 
 type Props = { children: ReactNode; label?: string };
@@ -43,19 +44,13 @@ export class PageErrorBoundary extends Component<Props, State> {
             This part of the app hit an unexpected error. Your saved notes and progress are safe.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <button
-              onClick={this.reload}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
+            <Button onClick={this.reload}>
               <RotateCcw className="h-4 w-4" aria-hidden />
               Reload
-            </button>
-            <button
-              onClick={this.reset}
-              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
+            </Button>
+            <Button variant="outline" onClick={this.reset}>
               Try again
-            </button>
+            </Button>
           </div>
         </div>
       </div>
