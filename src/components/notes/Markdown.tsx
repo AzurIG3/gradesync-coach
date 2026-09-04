@@ -52,25 +52,29 @@ export function Markdown({ children }: { children: string }) {
             </a>
           ),
           table: ({ children }) => (
-            <div className="mb-3 -mx-1 overflow-x-auto last:mb-0">
-              <table className="min-w-full border-collapse overflow-hidden rounded-lg border border-border text-xs">
-                {children}
-              </table>
+            <div className="mb-3 last:mb-0">
+              <div className="-mx-1 overflow-x-auto rounded-lg border border-border">
+                <table className="w-full min-w-[30rem] border-collapse text-xs">{children}</table>
+              </div>
+              <p className="mt-1 px-1 text-[11px] text-muted-foreground sm:hidden">
+                Swipe the table sideways to see all columns →
+              </p>
             </div>
           ),
           thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
           tbody: ({ children }) => <tbody>{children}</tbody>,
           tr: ({ children }) => <tr className="border-b border-border last:border-0">{children}</tr>,
           th: ({ children }) => (
-            <th className="border-r border-border px-2 py-1.5 text-left font-bold last:border-0">
+            <th className="border-r border-border px-2 py-1.5 text-left align-top font-bold break-words last:border-0">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border-r border-border px-2 py-1.5 align-top last:border-0">
+            <td className="border-r border-border px-2 py-1.5 align-top break-words last:border-0">
               {children}
             </td>
           ),
+
         }}
       >
         {children}
