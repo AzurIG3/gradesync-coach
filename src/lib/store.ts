@@ -192,13 +192,43 @@ export const actions = {
       subjects: s.subjects.map((sub) => (sub.id === id ? { ...sub, ...patch } : sub)),
     }));
   },
+  /** Soft delete — the subject moves to Recently Deleted for 30 days. */
   deleteSubject(id: string) {
+    setState((s) => {
+      const sub = s.subjects.find((x) => x.id === id);
+      return {
+        ...s,
+        subjects: s.subjects.filter((x) => x.id !== id),
+        tasks: s.tasks.filter((t) => t.subjectId !== id),
+        deletedSubjects: sub
+          ? [{ ...sub, deletedAt: new Date().toISOString() }, ...(s.deletedSubjects ?? [])]
+          : (s.deletedSubjects ?? []),
+      };
+    });
+  },
+  restoreSubject(id: string) {
+    setState((s) => {
+      const found = (s.deletedSubjects ?? []).find((d) => d.id === id);
+      if (!found) return s;
+      const { deletedAt: _deletedAt, ...sub } = found;
+      return {
+        ...s,
+        subjects: [...s.subjects, sub],
+        deletedSubjects: (s.deletedSubjects ?? []).filter((d) => d.id !== id),
+      };
+    });
+  },
+  /** Permanently removes a subject from Recently Deleted. */
+  purgeSubject(id: string) {
     setState((s) => ({
       ...s,
-      subjects: s.subjects.filter((sub) => sub.id !== id),
-      tasks: s.tasks.filter((t) => t.subjectId !== id),
+      deletedSubjects: (s.deletedSubjects ?? []).filter((d) => d.id !== id),
     }));
   },
+  purgeAllDeletedSubjects() {
+    setState((s) => ({ ...s, deletedSubjects: [] }));
+  },
+
   addTopic(subjectId: string, name: string) {
     setState((s) => ({
       ...s,
