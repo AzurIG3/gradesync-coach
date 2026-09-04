@@ -71,16 +71,31 @@ const DEFAULTS: StudyState = {
   streakCount: 0,
   streakLastDate: "",
   timer: { focusMin: 25, breakMin: 5 },
+  deletedSubjects: [],
 };
 
 let state: StudyState = load();
 const listeners = new Set<() => void>();
 
+/** Drops trashed subjects that are past the 30-day restore window. */
+function prune(s: StudyState): StudyState {
+  const cutoff = Date.now() - TRASH_DAYS * 24 * 60 * 60 * 1000;
+  const kept = (s.deletedSubjects ?? []).filter(
+    (d) => new Date(d.deletedAt).getTime() >= cutoff,
+  );
+  return kept.length === (s.deletedSubjects ?? []).length
+    ? { ...s, deletedSubjects: kept }
+    : { ...s, deletedSubjects: kept };
+}
+
 function load(): StudyState {
   if (typeof window === "undefined") return DEFAULTS;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...DEFAULTS, ...JSON.parse(raw), timer: { ...DEFAULTS.timer, ...(JSON.parse(raw).timer ?? {}) } };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return prune({ ...DEFAULTS, ...parsed, timer: { ...DEFAULTS.timer, ...(parsed.timer ?? {}) } });
+    }
   } catch {}
   return DEFAULTS;
 }
@@ -95,12 +110,13 @@ function persist() {
 
 export function hydrateStore(value: unknown) {
   const incoming = value && typeof value === "object" ? (value as Partial<StudyState>) : {};
-  state = { ...DEFAULTS, ...incoming, timer: { ...DEFAULTS.timer, ...(incoming.timer ?? {}) } };
+  state = prune({ ...DEFAULTS, ...incoming, timer: { ...DEFAULTS.timer, ...(incoming.timer ?? {}) } });
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {}
   listeners.forEach((listener) => listener());
 }
+
 
 function setState(updater: (s: StudyState) => StudyState) {
   state = updater(state);
