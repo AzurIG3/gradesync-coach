@@ -200,3 +200,36 @@ export const generateWeakSpotQuiz = createServerFn({ method: "POST" })
       { temperature: 0.95, topP: 0.95, maxOutputTokens: 4096 },
     );
   });
+
+/** Generates a simple SVG diagram for a note. */
+export const generateDiagram = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => {
+    const o = (input ?? {}) as Record<string, unknown>;
+    const text = str(o.text, 20_000);
+    if (!text.trim()) throw new Error("Note is empty");
+    return { text, apiKey: str(o.apiKey, 200).trim() };
+  })
+  .handler(async ({ data }) => {
+    const { resolveApiKey } = await import("./ai.server");
+    const { callGemini } = await import("./notes.server");
+    const { DIAGRAM_PROMPT } = await import("./ai-extra.server");
+    const key = resolveApiKey(data.apiKey);
+    const res = await callGemini(
+      key,
+      [{ text: `NOTES:\n${data.text.slice(0, 14_000)}` }],
+      DIAGRAM_PROMPT,
+      Boolean(data.apiKey),
+      { feature: "generateDiagram", temperature: 0.5, maxOutputTokens: 3072 },
+    );
+    if (!res.ok) return res;
+    const svg = res.text
+      .replace(/```(?:svg|xml|html)?/gi, "")
+      .replace(/```/g, "")
+      .trim();
+    const start = svg.indexOf("<svg");
+    const end = svg.lastIndexOf("</svg>");
+    if (start === -1 || end === -1) {
+      return { ok: false as const, kind: "error" as const, message: "Could not draw a diagram for this note. Try again." };
+    }
+    return { ok: true as const, text: svg.slice(start, end + 6) };
+  });
