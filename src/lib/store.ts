@@ -36,6 +36,13 @@ export interface TimerPrefs {
   breakMin: number;
 }
 
+export interface DeletedSubject extends Subject {
+  deletedAt: string;
+}
+
+/** How long a deleted subject stays restorable. */
+export const TRASH_DAYS = 30;
+
 export interface StudyState {
   subjects: Subject[];
   tasks: DailyTask[];
@@ -44,7 +51,10 @@ export interface StudyState {
   streakCount: number;
   streakLastDate: string;
   timer: TimerPrefs;
+  /** Subjects in "Recently Deleted" — restorable for 30 days. */
+  deletedSubjects: DeletedSubject[];
 }
+
 
 const KEY = "study-planner-v1";
 
