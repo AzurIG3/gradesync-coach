@@ -25,6 +25,7 @@ export type GeminiFeature =
   | "generateCheatSheet"
   | "transcribeVoiceNote"
   | "generateWeakSpotQuiz"
+  | "generateDiagram"
   | "reexplain";
 
 export type GeminiErrorKind = "rate_limit" | "bad_key" | "timeout" | "error";

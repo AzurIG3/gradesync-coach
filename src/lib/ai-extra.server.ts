@@ -69,3 +69,18 @@ export function weakSpotSystem(): string {
 export const MNEMONIC_HINT = `
 
 MEMORY AIDS: Where a card covers a LIST, SEQUENCE, ORDER or FORMULA SET that is hard to remember, add a "mnemonic" field with a short memory trick (acronym, rhyme or vivid sentence). Omit the field for cards that don't need one — never force one.`;
+
+/** Asks Gemini for a small, self-contained SVG diagram of a concept. */
+export const DIAGRAM_PROMPT = `Draw ONE simple diagram that helps a Pakistani Matric/Intermediate student understand the notes below.
+
+Reply with ONLY a raw SVG element. No prose, no code fences, no XML declaration, no <!DOCTYPE>.
+
+SVG rules (must all be followed):
+- Root: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="100%" role="img" aria-label="...">
+- Use ONLY these elements: svg, g, title, rect, circle, ellipse, line, polyline, polygon, path, text, tspan, marker, defs, linearGradient, stop.
+- NO script, NO foreignObject, NO image, NO external links, NO event attributes (onclick etc.), NO CSS @import.
+- Use currentColor for strokes/text so it works in dark mode, plus soft fills like fill="rgba(99,102,241,0.12)". Never rely on a white background.
+- Keep text short (2-6 words per label), font-size between 14 and 20, font-family="inherit", and keep every label INSIDE the viewBox.
+- Prefer a clear structure: a labelled flow/cycle (arrows via a marker), a labelled parts diagram, a comparison of 2-3 boxes, or a simple tree/hierarchy.
+- Maximum ~15 shapes. Simple and legible beats detailed.
+- Diagram only what the notes actually say. Do not invent facts.`;

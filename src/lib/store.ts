@@ -36,6 +36,13 @@ export interface TimerPrefs {
   breakMin: number;
 }
 
+export interface DeletedSubject extends Subject {
+  deletedAt: string;
+}
+
+/** How long a deleted subject stays restorable. */
+export const TRASH_DAYS = 30;
+
 export interface StudyState {
   subjects: Subject[];
   tasks: DailyTask[];
@@ -44,7 +51,10 @@ export interface StudyState {
   streakCount: number;
   streakLastDate: string;
   timer: TimerPrefs;
+  /** Subjects in "Recently Deleted" — restorable for 30 days. */
+  deletedSubjects: DeletedSubject[];
 }
+
 
 const KEY = "study-planner-v1";
 
@@ -61,16 +71,31 @@ const DEFAULTS: StudyState = {
   streakCount: 0,
   streakLastDate: "",
   timer: { focusMin: 25, breakMin: 5 },
+  deletedSubjects: [],
 };
 
 let state: StudyState = load();
 const listeners = new Set<() => void>();
 
+/** Drops trashed subjects that are past the 30-day restore window. */
+function prune(s: StudyState): StudyState {
+  const cutoff = Date.now() - TRASH_DAYS * 24 * 60 * 60 * 1000;
+  const kept = (s.deletedSubjects ?? []).filter(
+    (d) => new Date(d.deletedAt).getTime() >= cutoff,
+  );
+  return kept.length === (s.deletedSubjects ?? []).length
+    ? { ...s, deletedSubjects: kept }
+    : { ...s, deletedSubjects: kept };
+}
+
 function load(): StudyState {
   if (typeof window === "undefined") return DEFAULTS;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...DEFAULTS, ...JSON.parse(raw), timer: { ...DEFAULTS.timer, ...(JSON.parse(raw).timer ?? {}) } };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return prune({ ...DEFAULTS, ...parsed, timer: { ...DEFAULTS.timer, ...(parsed.timer ?? {}) } });
+    }
   } catch {}
   return DEFAULTS;
 }
@@ -85,12 +110,13 @@ function persist() {
 
 export function hydrateStore(value: unknown) {
   const incoming = value && typeof value === "object" ? (value as Partial<StudyState>) : {};
-  state = { ...DEFAULTS, ...incoming, timer: { ...DEFAULTS.timer, ...(incoming.timer ?? {}) } };
+  state = prune({ ...DEFAULTS, ...incoming, timer: { ...DEFAULTS.timer, ...(incoming.timer ?? {}) } });
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {}
   listeners.forEach((listener) => listener());
 }
+
 
 function setState(updater: (s: StudyState) => StudyState) {
   state = updater(state);
@@ -166,13 +192,43 @@ export const actions = {
       subjects: s.subjects.map((sub) => (sub.id === id ? { ...sub, ...patch } : sub)),
     }));
   },
+  /** Soft delete — the subject moves to Recently Deleted for 30 days. */
   deleteSubject(id: string) {
+    setState((s) => {
+      const sub = s.subjects.find((x) => x.id === id);
+      return {
+        ...s,
+        subjects: s.subjects.filter((x) => x.id !== id),
+        tasks: s.tasks.filter((t) => t.subjectId !== id),
+        deletedSubjects: sub
+          ? [{ ...sub, deletedAt: new Date().toISOString() }, ...(s.deletedSubjects ?? [])]
+          : (s.deletedSubjects ?? []),
+      };
+    });
+  },
+  restoreSubject(id: string) {
+    setState((s) => {
+      const found = (s.deletedSubjects ?? []).find((d) => d.id === id);
+      if (!found) return s;
+      const { deletedAt: _deletedAt, ...sub } = found;
+      return {
+        ...s,
+        subjects: [...s.subjects, sub],
+        deletedSubjects: (s.deletedSubjects ?? []).filter((d) => d.id !== id),
+      };
+    });
+  },
+  /** Permanently removes a subject from Recently Deleted. */
+  purgeSubject(id: string) {
     setState((s) => ({
       ...s,
-      subjects: s.subjects.filter((sub) => sub.id !== id),
-      tasks: s.tasks.filter((t) => t.subjectId !== id),
+      deletedSubjects: (s.deletedSubjects ?? []).filter((d) => d.id !== id),
     }));
   },
+  purgeAllDeletedSubjects() {
+    setState((s) => ({ ...s, deletedSubjects: [] }));
+  },
+
   addTopic(subjectId: string, name: string) {
     setState((s) => ({
       ...s,
