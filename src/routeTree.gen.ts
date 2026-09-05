@@ -17,6 +17,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SubjectsRouteImport } from './routes/subjects'
 import { Route as TimerRouteImport } from './routes/timer'
+import { Route as TrashRouteImport } from './routes/trash'
 import { Route as NotesIndexRouteImport } from './routes/notes/index'
 import { Route as NotesNoteIdRouteImport } from './routes/notes/$noteId'
 import { Route as NotesTestRouteImport } from './routes/notes/test'
@@ -62,6 +63,11 @@ const TimerRoute = TimerRouteImport.update({
   path: '/timer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrashRoute = TrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotesIndexRoute = NotesIndexRouteImport.update({
   id: '/notes/',
   path: '/notes/',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/subjects': typeof SubjectsRoute
   '/timer': typeof TimerRoute
+  '/trash': typeof TrashRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/notes/test': typeof NotesTestRoute
   '/notes/weak': typeof NotesWeakRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/subjects': typeof SubjectsRoute
   '/timer': typeof TimerRoute
+  '/trash': typeof TrashRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/notes/test': typeof NotesTestRoute
   '/notes/weak': typeof NotesWeakRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/subjects': typeof SubjectsRoute
   '/timer': typeof TimerRoute
+  '/trash': typeof TrashRoute
   '/notes/$noteId': typeof NotesNoteIdRoute
   '/notes/test': typeof NotesTestRoute
   '/notes/weak': typeof NotesWeakRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/subjects'
     | '/timer'
+    | '/trash'
     | '/notes/$noteId'
     | '/notes/test'
     | '/notes/weak'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/subjects'
     | '/timer'
+    | '/trash'
     | '/notes/$noteId'
     | '/notes/test'
     | '/notes/weak'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/subjects'
     | '/timer'
+    | '/trash'
     | '/notes/$noteId'
     | '/notes/test'
     | '/notes/weak'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SubjectsRoute: typeof SubjectsRoute
   TimerRoute: typeof TimerRoute
+  TrashRoute: typeof TrashRoute
   NotesNoteIdRoute: typeof NotesNoteIdRoute
   NotesTestRoute: typeof NotesTestRoute
   NotesWeakRoute: typeof NotesWeakRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TimerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trash': {
+      id: '/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof TrashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes/': {
       id: '/notes/'
       path: '/notes'
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SubjectsRoute: SubjectsRoute,
   TimerRoute: TimerRoute,
+  TrashRoute: TrashRoute,
   NotesNoteIdRoute: NotesNoteIdRoute,
   NotesTestRoute: NotesTestRoute,
   NotesWeakRoute: NotesWeakRoute,

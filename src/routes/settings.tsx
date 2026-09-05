@@ -1,6 +1,7 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Check, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
+import { Archive, Check, Download, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
+
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
@@ -21,7 +22,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import { AccountSyncCard } from "@/components/AccountSyncCard";
+import { downloadMyData } from "@/lib/export-data";
+import { useAuth } from "@/lib/auth";
 import { actions } from "@/lib/store";
+
 import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/settings")({
@@ -49,6 +53,8 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { t } = useT();
+  const { user } = useAuth();
+
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [key, setKey] = useState("");
@@ -85,6 +91,33 @@ function SettingsPage() {
     <AppShell title={t("settingsTitle")} subtitle={t("settingsSubtitle")}>
       <div className="space-y-4">
         <AccountSyncCard />
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Download size={18} />
+            </span>
+            <h2 className="text-base font-bold">Your data</h2>
+          </div>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Save a copy of everything you have here — notes, subjects, schedule, progress and
+            settings — as one file, or bring back something you deleted by mistake.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="h-12 flex-1"
+              onClick={() => downloadMyData(user?.email ?? null)}
+            >
+              <Download size={18} /> Download my data
+            </Button>
+            <Button variant="outline" className="h-12 flex-1" asChild>
+              <Link to="/trash">
+                <Archive size={18} /> Recently deleted
+              </Link>
+            </Button>
+          </div>
+        </section>
+
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">

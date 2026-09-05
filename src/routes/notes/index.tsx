@@ -19,6 +19,7 @@ import {
   Search,
   RotateCcw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { getUserApiKey } from "@/lib/ai-config";
@@ -583,8 +584,14 @@ function NotesPage() {
                         </Link>
                         <RenameIconButton value={n.title} onSave={(t) => noteActions.rename(n.id, t)} />
                         <button
-                          aria-label="Delete note"
-                          onClick={() => noteActions.remove(n.id)}
+                          aria-label="Move note to Recently Deleted"
+                          onClick={() => {
+                            noteActions.remove(n.id);
+                            toast("Moved to Recently Deleted", {
+                              description: "You can restore it for the next 30 days.",
+                              action: { label: "Undo", onClick: () => noteActions.restore(n.id) },
+                            });
+                          }}
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted"
                         >
                           <Trash2 size={18} />
