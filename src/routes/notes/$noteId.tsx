@@ -12,6 +12,7 @@ import {
   HelpCircle,
   MessageCircle,
   Pencil,
+  Network,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { HighlightableNote } from "@/components/notes/HighlightableNote";
 import { FlashcardsView } from "@/components/notes/FlashcardsView";
 import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
+import { NoteDiagram } from "@/components/notes/NoteDiagram";
 import { NoteChat } from "@/components/notes/NoteChat";
 import { EditableTitle } from "@/components/notes/EditableTitle";
 import { NoteEditor } from "@/components/notes/NoteEditor";
@@ -31,6 +33,7 @@ import { UNSORTED_CHAPTER } from "@/lib/syllabus";
 import { extractChart, parseFlashcards, parseQuiz } from "@/lib/notes-parse";
 import { getUserApiKey } from "@/lib/ai-config";
 import { generateFromNote } from "@/lib/notes.functions";
+import { generateDiagram } from "@/lib/ai-extra.functions";
 import { useNotes, noteActions } from "@/lib/notes-store";
 import { dedupeBy, dedupeQuestions, loadAsked, rememberAsked } from "@/lib/quiz-dedupe";
 import { strongTopics, weakTopics } from "@/lib/mastery";
@@ -41,7 +44,7 @@ import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 
 type Mode = "summary" | "details" | "flashcards" | "quiz";
-type View = Mode | "chat";
+type View = Mode | "chat" | "diagram";
 
 const OPTIONS: { mode: Mode; label: string; icon: typeof FileText }[] = [
   { mode: "summary", label: "Summarize", icon: FileText },
@@ -56,6 +59,7 @@ const VIEW_LABEL: Record<View, string> = {
   flashcards: "Flashcards",
   quiz: "Quiz Me",
   chat: "Ask about this note",
+  diagram: "Diagram",
 };
 
 const DIFFICULTIES: { id: Difficulty; label: string }[] = [
@@ -90,7 +94,7 @@ function NoteDetailPage() {
   const { noteId } = useParams({ from: "/notes/$noteId" });
   const note = useNotes((n) => n.find((x) => x.id === noteId));
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState<Mode | null>(null);
+  const [pending, setPending] = useState<Mode | "diagram" | null>(null);
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<{ message: string; keyIssue: boolean } | null>(null);
   const [gen, setGen] = useState(0);
@@ -158,6 +162,36 @@ function NoteDetailPage() {
     }
   }
 
+
+  /** Asks Gemini for a simple SVG diagram of this note. */
+  async function runDiagram() {
+    if (pending || !note) return;
+    setOpen(false);
+    setError(null);
+    setPending("diagram");
+    try {
+      const res = (await generateDiagram({
+        data: { text: note.content, apiKey: getUserApiKey() },
+      })) as
+        | { ok: true; text: string }
+        | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+      if (!res.ok) {
+        setError({ message: res.message, keyIssue: res.kind !== "error" });
+        return;
+      }
+      noteActions.setOutput(note.id, "diagram", res.text);
+      setGen((g) => g + 1);
+      setView("diagram");
+    } catch (e) {
+      console.error(e);
+      setError({
+        message: "Sorry, we couldn't draw that right now. Please try again.",
+        keyIssue: false,
+      });
+    } finally {
+      setPending(null);
+    }
+  }
 
   if (!note) {
     return (
@@ -266,6 +300,24 @@ function NoteDetailPage() {
                 setEditing(false);
               }}
             />
+          ) : view === "diagram" ? (
+            <div className="space-y-3">
+              <NoteDiagram key={`d${gen}`} svg={shown} />
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+                disabled={pending !== null}
+                onClick={() => void runDiagram()}
+              >
+                {pending === "diagram" ? (
+                  <Loader2 className="animate-spin" size={15} />
+                ) : (
+                  <Network size={15} />
+                )}
+                Draw a new diagram
+              </Button>
+            </div>
           ) : view === "flashcards" ? (
             <FlashcardsView
               key={`f${gen}`}
@@ -338,7 +390,7 @@ function NoteDetailPage() {
       {pending && (
         <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
           <Loader2 className="animate-spin" size={16} />
-          Generating {OPTIONS.find((o) => o.mode === pending)?.label}…
+          Generating {pending === "diagram" ? "Diagram" : OPTIONS.find((o) => o.mode === pending)?.label}…
         </div>
       )}
 
@@ -398,6 +450,19 @@ function NoteDetailPage() {
               </Button>
             ))}
           </div>
+          <Button
+            variant="outline"
+            disabled={pending !== null}
+            onClick={() => void runDiagram()}
+            className="mt-3 h-14 w-full gap-2 rounded-2xl text-sm font-bold"
+          >
+            {pending === "diagram" ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <Network size={20} />
+            )}
+            Draw a diagram
+          </Button>
           <Button
             variant="outline"
             disabled={pending !== null}
