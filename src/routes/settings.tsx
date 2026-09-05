@@ -22,7 +22,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import { AccountSyncCard } from "@/components/AccountSyncCard";
+import { downloadMyData } from "@/lib/export-data";
+import { useAuth } from "@/lib/auth";
 import { actions } from "@/lib/store";
+
 import { withPageBoundary } from "@/components/PageErrorBoundary";
 
 export const Route = createFileRoute("/settings")({
