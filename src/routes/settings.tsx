@@ -1,6 +1,7 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Check, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
+import { Archive, Check, Download, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
+
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
