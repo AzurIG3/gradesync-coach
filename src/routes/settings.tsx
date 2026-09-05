@@ -88,6 +88,33 @@ function SettingsPage() {
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <Download size={18} />
+            </span>
+            <h2 className="text-base font-bold">Your data</h2>
+          </div>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Save a copy of everything you have here — notes, subjects, schedule, progress and
+            settings — as one file, or bring back something you deleted by mistake.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="h-12 flex-1"
+              onClick={() => downloadMyData(user?.email ?? null)}
+            >
+              <Download size={18} /> Download my data
+            </Button>
+            <Button variant="outline" className="h-12 flex-1" asChild>
+              <Link to="/trash">
+                <Archive size={18} /> Recently deleted
+              </Link>
+            </Button>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
               <Moon size={18} />
             </span>
             <h2 className="text-base font-bold">Appearance</h2>
