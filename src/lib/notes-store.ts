@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { syncData } from "./sync-bridge";
 
 export type NoteOutputs = Partial<
-  Record<"summary" | "details" | "flashcards" | "quiz" | "diagram", string>
+  Record<"summary" | "details" | "flashcards" | "quiz" | "diagram" | "diagramMap", string>
 >;
 
 export interface Note {
