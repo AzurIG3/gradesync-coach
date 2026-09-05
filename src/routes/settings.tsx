@@ -53,6 +53,8 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { t } = useT();
+  const { user } = useAuth();
+
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [key, setKey] = useState("");
