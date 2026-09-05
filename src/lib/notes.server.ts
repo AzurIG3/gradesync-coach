@@ -21,6 +21,13 @@ STRUCTURE the reply with proper Markdown heading levels so it's easy to scan:
 - Do not put everything under one heading and do not skip levels (no \`###\` without a parent \`##\`).
 - Do NOT use a top-level \`#\` heading — the note already has a title.`;
 
+
+const TABLE_HINT = `
+
+TABLES AND COMPARISONS: Whenever content compares two or more things, or lists items with the same repeated fields (properties, units, dates, examples, differences), present it as a GitHub-flavoured Markdown table with a header row and \`---\` separator — not as long prose. Keep tables narrow so they read well on a phone: maximum 4 columns and short cell text (a few words). If more fields are needed, split into two tables or use \`###\` sub-headings with bullets instead.
+
+PHONE-FRIENDLY STRUCTURE: Content that branches (cases, types, steps with sub-steps, if/else rules) must be laid out top-to-bottom: a \`###\` sub-heading or a bold label per branch, then short bullets under it. Never place branches side by side, never draw ASCII diagrams or trees, and keep nesting to two levels at most.`;
+
 const VARIETY_HINT = `
 
 VARIETY IS REQUIRED: Generate a FRESH, VARIED set each time. Deliberately pick different details, angles, phrasings and depth than the most obvious ones. Spread your picks across the WHOLE of the notes — beginning, middle and end — not just the first or most prominent facts. Mix question types (definition, application, cause/effect, comparison, numeric/example based). Assume this content has been used before: avoid repeating the same questions or the same wording.`;
@@ -36,10 +43,12 @@ export const MODE_PROMPTS: Record<GenMode, string> = {
   summary:
     "Summarize the following study notes for a Pakistani Matric (Grade 9-10) student. Use simple words and short sentences. Reply in Markdown: start with a 3-6 sentence overview paragraph, then use `##` / `###` headings to group the main ideas, and put a short bulleted list under each. Use **bold** for key terms. If the notes contain a table of data, you may include a small Markdown table under the relevant heading." +
     HEADING_HINT +
+    TABLE_HINT +
     CHART_HINT,
   details:
     "Pull out the KEY DETAILS a Matric (Grade 9-10) student must remember from the following study notes: important definitions, formulas, dates, names and facts. Reply in Markdown, grouped under `##` / `###` headings by topic, with short bullet points under each heading. Use **bold** for the label and plain text for the explanation. Keep the language simple. If the notes contain tabular data, you may include a small Markdown table." +
     HEADING_HINT +
+    TABLE_HINT +
     MNEMONIC_TEXT_HINT +
     CHART_HINT,
   flashcards:
@@ -136,7 +145,7 @@ Strict rules:
 - Do NOT add new facts, explanations or commentary of your own.
 - If a word is truly unreadable, use your best guess from context rather than inventing content.
 - Reply with ONLY the cleaned notes. No preamble, no code fences around the whole answer.
-- If the file has no readable text at all, reply with exactly: NO_TEXT_FOUND`;
+- If the file has no readable text at all, reply with exactly: NO_TEXT_FOUND` + TABLE_HINT;
 
 
 /** Cleans raw extracted/OCR text into readable notes WITHOUT losing information. */
@@ -151,7 +160,7 @@ Strict rules:
 - PRESERVE the original meaning and EVERY fact, number, name, date, definition and example. Do NOT summarize, shorten, merge or drop any information.
 - Do NOT add new facts, explanations or commentary of your own.
 - If a word is truly unreadable, keep your best guess from context rather than inventing new content.
-- Reply with ONLY the cleaned text. No preamble, no code fences around the whole answer.`;
+- Reply with ONLY the cleaned text. No preamble, no code fences around the whole answer.` + TABLE_HINT;
 
 import {
   callGeminiShared,
