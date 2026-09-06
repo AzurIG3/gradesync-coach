@@ -23,6 +23,8 @@ import { FlashcardsView } from "@/components/notes/FlashcardsView";
 import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
 import { NoteDiagram } from "@/components/notes/NoteDiagram";
+import { DiagramEditor } from "@/components/notes/DiagramEditor";
+
 import { NoteChat } from "@/components/notes/NoteChat";
 import { EditableTitle } from "@/components/notes/EditableTitle";
 import { NoteEditor } from "@/components/notes/NoteEditor";
