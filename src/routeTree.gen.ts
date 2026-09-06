@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
+import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -31,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 const AssistantRoute = AssistantRouteImport.update({
   id: '/assistant',
   path: '/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerformanceRoute = PerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressRoute = ProgressRouteImport.update({
@@ -92,6 +98,7 @@ const NotesWeakRoute = NotesWeakRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/performance': typeof PerformanceRoute
   '/progress': typeof ProgressRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/performance': typeof PerformanceRoute
   '/progress': typeof ProgressRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/performance': typeof PerformanceRoute
   '/progress': typeof ProgressRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/assistant'
+    | '/performance'
     | '/progress'
     | '/schedule'
     | '/settings'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/assistant'
+    | '/performance'
     | '/progress'
     | '/schedule'
     | '/settings'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/assistant'
+    | '/performance'
     | '/progress'
     | '/schedule'
     | '/settings'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistantRoute: typeof AssistantRoute
+  PerformanceRoute: typeof PerformanceRoute
   ProgressRoute: typeof ProgressRoute
   ScheduleRoute: typeof ScheduleRoute
   SettingsRoute: typeof SettingsRoute
@@ -213,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/assistant'
       fullPath: '/assistant'
       preLoaderRoute: typeof AssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/performance': {
+      id: '/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progress': {
@@ -298,6 +318,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
+  PerformanceRoute: PerformanceRoute,
   ProgressRoute: ProgressRoute,
   ScheduleRoute: ScheduleRoute,
   SettingsRoute: SettingsRoute,
