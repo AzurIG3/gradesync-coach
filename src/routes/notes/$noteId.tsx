@@ -23,6 +23,8 @@ import { FlashcardsView } from "@/components/notes/FlashcardsView";
 import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
 import { NoteDiagram } from "@/components/notes/NoteDiagram";
+import { DiagramEditor } from "@/components/notes/DiagramEditor";
+
 import { NoteChat } from "@/components/notes/NoteChat";
 import { EditableTitle } from "@/components/notes/EditableTitle";
 import { NoteEditor } from "@/components/notes/NoteEditor";
@@ -301,8 +303,17 @@ function NoteDetailPage() {
               }}
             />
           ) : view === "diagram" ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <NoteDiagram key={`d${gen}`} svg={shown} />
+              <div className="rounded-2xl border border-border p-4">
+                <h3 className="mb-2 text-sm font-bold">Build it yourself</h3>
+                <DiagramEditor
+                  key={`m${gen}`}
+                  svg={shown}
+                  saved={note.outputs.diagramMap}
+                  onChange={(json) => noteActions.setOutput(note.id, "diagramMap", json)}
+                />
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -318,6 +329,7 @@ function NoteDetailPage() {
                 Draw a new diagram
               </Button>
             </div>
+
           ) : view === "flashcards" ? (
             <FlashcardsView
               key={`f${gen}`}
