@@ -1,15 +1,26 @@
-import { useState } from "react";
-import { Cloud, Loader2, LogOut, Mail, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Cloud, Loader2, LogOut, Mail, RefreshCw, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
+import { lastSyncedAt, pullRemote } from "@/lib/cloud-sync";
 
 export function AccountSyncCard() {
   const { user, ready, syncing, sendMagicLink, signOut } = useAuth();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [pulling, setPulling] = useState(false);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLastSynced(lastSyncedAt());
+    const onPulled = () => setLastSynced(lastSyncedAt());
+    window.addEventListener("sophia-sync-pulled", onPulled);
+    return () => window.removeEventListener("sophia-sync-pulled", onPulled);
+  }, [user]);
+
 
   if (!ready) {
     return <section className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">Checking account…</section>;
