@@ -24,6 +24,7 @@ import { QuizView } from "@/components/notes/QuizView";
 import { NoteChart } from "@/components/notes/NoteChart";
 import { NoteDiagram } from "@/components/notes/NoteDiagram";
 import { DiagramEditor } from "@/components/notes/DiagramEditor";
+import { trackAi } from "@/lib/ai-metrics";
 
 import { NoteChat } from "@/components/notes/NoteChat";
 import { EditableTitle } from "@/components/notes/EditableTitle";
@@ -113,19 +114,22 @@ function NoteDetailPage() {
     const memoryKey = `${note.id}:${mode}`;
     const varied = mode === "quiz" || mode === "flashcards";
     try {
-      const res = (await generateFromNote({
-        data: {
-          mode,
-          text: note.content,
-          avoid: varied ? loadAsked(memoryKey) : [],
-          weak: varied ? weakTopics(masteryScope) : [],
-          strong: varied ? strongTopics(masteryScope) : [],
-          difficulty: diff,
-          apiKey: getUserApiKey(),
-        },
-      })) as
+      const res = (await trackAi(mode, () =>
+        generateFromNote({
+          data: {
+            mode,
+            text: note.content,
+            avoid: varied ? loadAsked(memoryKey) : [],
+            weak: varied ? weakTopics(masteryScope) : [],
+            strong: varied ? strongTopics(masteryScope) : [],
+            difficulty: diff,
+            apiKey: getUserApiKey(),
+          },
+        }),
+      )) as
         | { ok: true; text: string }
         | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+
       if (!res.ok) {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
@@ -172,9 +176,9 @@ function NoteDetailPage() {
     setError(null);
     setPending("diagram");
     try {
-      const res = (await generateDiagram({
-        data: { text: note.content, apiKey: getUserApiKey() },
-      })) as
+      const res = (await trackAi("diagram", () =>
+        generateDiagram({ data: { text: note.content, apiKey: getUserApiKey() } }),
+      )) as
         | { ok: true; text: string }
         | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
       if (!res.ok) {

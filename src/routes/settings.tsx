@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Archive, Check, Download, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
+import { Activity, Archive, Check, Download, KeyRound, Monitor, Moon, Play, Sun, Trash2, Upload, Volume2 } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,13 @@ function SettingsPage() {
                 <Archive size={18} /> Recently deleted
               </Link>
             </Button>
+            <Button variant="outline" className="h-12 flex-1" asChild>
+              <Link to="/performance">
+                <Activity size={18} /> AI speed & reliability
+              </Link>
+            </Button>
           </div>
+
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-5">

@@ -27,7 +27,9 @@ import { extractTextFromFiles } from "@/lib/extract-text";
 import { estimateSeconds, formatEstimate } from "@/lib/extract-cache";
 import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
 import { autoFileNote } from "@/lib/note-filing";
+import { trackAi } from "@/lib/ai-metrics";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
+
 import { useStore } from "@/lib/store";
 import { RenameIconButton } from "@/components/notes/EditableTitle";
 import { cn } from "@/lib/utils";
@@ -180,7 +182,8 @@ function NotesPage() {
     setEstimate(seconds);
     setStage("Preparing your file…");
     try {
-      const res = await extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
+      const res = await trackAi("extractFileText", () =>
+        extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
         if (cur && total) setProgress({ cur, total });
         const suffix = cur && total && total > 1 ? ` (image ${cur} of ${total})` : "";
         setStage(
@@ -191,8 +194,9 @@ function NotesPage() {
               : s === "cached"
                 ? "Found this file already — loading instantly…"
                 : "Cleaning up notes…") + suffix,
-        );
-      });
+          );
+        }),
+      );
       if (!res.ok) {
         setError({
           message: res.message,
