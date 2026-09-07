@@ -115,7 +115,13 @@ function SettingsPage() {
                 <Archive size={18} /> Recently deleted
               </Link>
             </Button>
+            <Button variant="outline" className="h-12 flex-1" asChild>
+              <Link to="/performance">
+                <Activity size={18} /> AI speed & reliability
+              </Link>
+            </Button>
           </div>
+
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-5">
