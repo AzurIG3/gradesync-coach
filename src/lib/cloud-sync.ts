@@ -53,6 +53,47 @@ function scheduleUpload(key: SyncDataKey, payload: unknown) {
   timers.set(key, setTimeout(() => void upload(key, payload), 350));
 }
 
+/** Pulls whatever the account holds and applies it to this device. */
+export async function pullRemote(): Promise<boolean> {
+  if (!activeUserId) return false;
+  const { data, error } = await supabase
+    .from("user_sync_data")
+    .select("data_key,payload")
+    .eq("user_id", activeUserId);
+  if (error) {
+    console.error("Account sync failed", error.message);
+    return false;
+  }
+  for (const row of data ?? []) {
+    applyLocal(row.data_key as SyncDataKey, row.payload);
+  }
+  lastPulledAt = new Date().toISOString();
+  try {
+    window.localStorage.setItem(LAST_PULL_KEY, lastPulledAt);
+  } catch {}
+  window.dispatchEvent(new Event("sophia-sync-pulled"));
+  return true;
+}
+
+/** Re-checks the account whenever the student comes back to this tab. */
+function startPullOnFocus() {
+  if (pullListener) return;
+  pullListener = () => {
+    if (document.visibilityState === "visible") void pullRemote();
+  };
+  document.addEventListener("visibilitychange", pullListener);
+  window.addEventListener("focus", pullListener);
+}
+
+export function lastSyncedAt(): string | null {
+  if (lastPulledAt) return lastPulledAt;
+  try {
+    return window.localStorage.getItem(LAST_PULL_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export async function initializeAccountSync(userId: string) {
   if (!activeUserId) {
     const previousOwner = window.localStorage.getItem(OWNER_KEY);
@@ -76,6 +117,11 @@ export async function initializeAccountSync(userId: string) {
     if (remote.has(key)) applyLocal(key, remote.get(key));
     else await upload(key, readLocal(key));
   }
+  lastPulledAt = new Date().toISOString();
+  try {
+    window.localStorage.setItem(LAST_PULL_KEY, lastPulledAt);
+  } catch {}
+  startPullOnFocus();
 }
 
 export function stopAccountSync(restoreAnonymous = false) {
@@ -83,6 +129,11 @@ export function stopAccountSync(restoreAnonymous = false) {
   registerSyncWriter(undefined);
   timers.forEach(clearTimeout);
   timers.clear();
+  if (pullListener) {
+    document.removeEventListener("visibilitychange", pullListener);
+    window.removeEventListener("focus", pullListener);
+    pullListener = null;
+  }
   if (restoreAnonymous && anonymousSnapshot) {
     for (const [key, payload] of Object.entries(anonymousSnapshot)) {
       applyLocal(key as SyncDataKey, payload);
