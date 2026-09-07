@@ -180,7 +180,8 @@ function NotesPage() {
     setEstimate(seconds);
     setStage("Preparing your file…");
     try {
-      const res = await extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
+      const res = await trackAi("extractFileText", () =>
+        extractTextFromFiles(files, getUserApiKey(), (s, cur, total) => {
         if (cur && total) setProgress({ cur, total });
         const suffix = cur && total && total > 1 ? ` (image ${cur} of ${total})` : "";
         setStage(
@@ -191,8 +192,9 @@ function NotesPage() {
               : s === "cached"
                 ? "Found this file already — loading instantly…"
                 : "Cleaning up notes…") + suffix,
-        );
-      });
+          );
+        }),
+      );
       if (!res.ok) {
         setError({
           message: res.message,
