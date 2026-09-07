@@ -113,7 +113,9 @@ function NoteDetailPage() {
     const memoryKey = `${note.id}:${mode}`;
     const varied = mode === "quiz" || mode === "flashcards";
     try {
-      const res = (await generateFromNote({
+      const res = (await trackAi(mode, () =>
+        generateFromNote({
+
         data: {
           mode,
           text: note.content,
