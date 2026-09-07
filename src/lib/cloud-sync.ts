@@ -11,10 +11,14 @@ const STORAGE_KEYS: Record<SyncDataKey, string> = {
   sessions: "sophia.sessions.v1",
 };
 const OWNER_KEY = "sophia.sync.owner";
+const LAST_PULL_KEY = "sophia.sync.lastPull";
 
 let activeUserId: string | null = null;
 let anonymousSnapshot: Partial<Record<SyncDataKey, unknown>> | null = null;
+let lastPulledAt: string | null = null;
+let pullListener: (() => void) | null = null;
 const timers = new Map<SyncDataKey, ReturnType<typeof setTimeout>>();
+
 
 function readLocal(key: SyncDataKey): unknown {
   try {
