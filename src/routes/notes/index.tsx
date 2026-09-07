@@ -27,7 +27,9 @@ import { extractTextFromFiles } from "@/lib/extract-text";
 import { estimateSeconds, formatEstimate } from "@/lib/extract-cache";
 import { VoiceNoteButton } from "@/components/notes/VoiceNoteButton";
 import { autoFileNote } from "@/lib/note-filing";
+import { trackAi } from "@/lib/ai-metrics";
 import { useNotes, noteActions, noteSize, formatSize, type Note } from "@/lib/notes-store";
+
 import { useStore } from "@/lib/store";
 import { RenameIconButton } from "@/components/notes/EditableTitle";
 import { cn } from "@/lib/utils";
