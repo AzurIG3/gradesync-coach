@@ -115,19 +115,20 @@ function NoteDetailPage() {
     try {
       const res = (await trackAi(mode, () =>
         generateFromNote({
-
-        data: {
-          mode,
-          text: note.content,
-          avoid: varied ? loadAsked(memoryKey) : [],
-          weak: varied ? weakTopics(masteryScope) : [],
-          strong: varied ? strongTopics(masteryScope) : [],
-          difficulty: diff,
-          apiKey: getUserApiKey(),
-        },
-      })) as
+          data: {
+            mode,
+            text: note.content,
+            avoid: varied ? loadAsked(memoryKey) : [],
+            weak: varied ? weakTopics(masteryScope) : [],
+            strong: varied ? strongTopics(masteryScope) : [],
+            difficulty: diff,
+            apiKey: getUserApiKey(),
+          },
+        }),
+      )) as
         | { ok: true; text: string }
         | { ok: false; kind: "rate_limit" | "bad_key" | "error"; message: string };
+
       if (!res.ok) {
         setError({ message: res.message, keyIssue: res.kind !== "error" });
         return;
