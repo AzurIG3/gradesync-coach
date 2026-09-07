@@ -30,12 +30,40 @@ export function AccountSyncCard() {
           <div className="rounded-xl border border-border bg-background px-4 py-3">
             <p className="font-mono text-xs text-muted-foreground">SIGNED IN</p>
             <p className="mt-1 truncate text-sm font-semibold">{user.email}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{syncing ? "Syncing your study data…" : "Your notes and progress are synced."}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {syncing
+                ? "Syncing your study data…"
+                : lastSynced
+                  ? `Your notes and progress are synced. Last checked ${new Date(lastSynced).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
+                  : "Your notes and progress are synced."}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Anything you change here shows up on your other devices the next time you open the app
+              there.
+            </p>
           </div>
-          <Button variant="outline" className="w-full rounded-xl" disabled={syncing} onClick={() => void signOut()}>
+          <Button
+            variant="outline"
+            className="w-full rounded-xl"
+            disabled={syncing || pulling}
+            onClick={async () => {
+              setPulling(true);
+              const ok = await pullRemote();
+              setPulling(false);
+              setLastSynced(lastSyncedAt());
+              toast[ok ? "success" : "error"](
+                ok ? "Up to date with your other devices." : "Could not reach your account just now.",
+              );
+            }}
+          >
+            {pulling ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />} Sync
+            now
+          </Button>
+          <Button variant="ghost" className="w-full rounded-xl" disabled={syncing} onClick={() => void signOut()}>
             {syncing ? <Loader2 className="animate-spin" size={16} /> : <LogOut size={16} />} Sign out
           </Button>
         </div>
+
       ) : sent ? (
         <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
           <p className="font-semibold">Check your email</p>
